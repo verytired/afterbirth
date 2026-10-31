@@ -1,8 +1,8 @@
 // Loads a worklet module once, and compiles its WASM engine if it can (null means use the JS engine)
 import voiceUrl from './voice-processor.ts?worker&url';
 import voiceWasm from './voice.wasm?url';
-import drumUrl from './drum-processor.ts?worker&url';
-import drumWasm from './tr606.wasm?url';
+import url606 from './tr606-processor.ts?worker&url';
+import wasm606 from './tr606.wasm?url';
 
 const ready = new Map<string, Promise<WebAssembly.Module | null>>();
 
@@ -20,4 +20,4 @@ function load(ctx: AudioContext, processorUrl: string, wasmUrl: string) {
 }
 
 export const loadVoice = (ctx: AudioContext) => load(ctx, voiceUrl, voiceWasm);
-export const load606 = (ctx: AudioContext) => load(ctx, drumUrl, drumWasm);
+export const load606 = (ctx: AudioContext) => load(ctx, url606, wasm606);

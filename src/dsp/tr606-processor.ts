@@ -1,7 +1,7 @@
 // AudioWorklet shell around the 606 engine: WASM when it compiles, else the TS twin.
 // Splits each render block at hit boundaries, like voice-processor.ts
 import { Tr606 } from './tr606';
-import type { DrumMsg, EngineName, ProcessorMsg } from './protocol';
+import type { Msg606, EngineName, ProcessorMsg } from './protocol';
 
 declare const sampleRate: number;
 declare const currentTime: number;
@@ -19,9 +19,9 @@ function wasmEngine(mod: WebAssembly.Module): Engine {
   return { trig: (v, l, s) => x.trig(v, l, s), render(out, off, n) { x.render(n); out.set(buf.subarray(0, n), off); } };
 }
 
-class DrumProcessor extends AudioWorkletProcessor {
+class Processor606 extends AudioWorkletProcessor {
   private engine: Engine;
-  private q: DrumMsg[] = [];
+  private q: Msg606[] = [];
 
   constructor({ processorOptions: o }: { processorOptions: { wasm: WebAssembly.Module | null } }) {
     super();
@@ -33,7 +33,7 @@ class DrumProcessor extends AudioWorkletProcessor {
     }
     this.engine = e ?? new Tr606(sampleRate);
     this.port.postMessage({ k: 'engine', name } satisfies ProcessorMsg);
-    this.port.onmessage = (ev: MessageEvent<DrumMsg>) => {
+    this.port.onmessage = (ev: MessageEvent<Msg606>) => {
       let i = this.q.length;
       while (i > 0 && this.q[i - 1].t > ev.data.t) i--;
       this.q.splice(i, 0, ev.data);
@@ -56,4 +56,4 @@ class DrumProcessor extends AudioWorkletProcessor {
   }
 }
 
-registerProcessor('tr606', DrumProcessor);
+registerProcessor('tr606', Processor606);

@@ -17,7 +17,7 @@ function wasmEngine(): Engine {
 type Hit = [frame: number, v: number, l: number];
 const STEP = 0.125; // 120 BPM
 
-// Render in 128-frame blocks, split at hits like drum-processor.ts
+// Render in 128-frame blocks, split at hits like tr606-processor.ts
 function drive(e: Engine, hits: Hit[], frames: number) {
   const out = new Float32Array(frames);
   let h = 0;

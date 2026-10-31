@@ -2,7 +2,7 @@ import { ctx } from './state';
 import { Channel } from './audio';
 import { load606 } from './dsp/load';
 import { BD, SD, LT, HT, CY, CH, OH } from './dsp/tr606';
-import type { DrumMsg, ProcessorMsg } from './dsp/protocol';
+import type { Msg606, ProcessorMsg } from './dsp/protocol';
 import { loadPats, makeBank, mountDevice, type Machine, type Pat } from './rack';
 import { numbox } from './dom';
 
@@ -271,7 +271,7 @@ export const make909 = () => makeDrum('AB-909', 'd909',
 // assembly/tr606.ts) in an AudioWorklet; this side only sends hits. One global accent row
 export const make606 = () => {
   let node: AudioWorkletNode | undefined;
-  const trig = (v: number): Hit => (t, l, s) => node?.port.postMessage({ k: 'trig', t, v, l, s } satisfies DrumMsg);
+  const trig = (v: number): Hit => (t, l, s) => node?.port.postMessage({ k: 'trig', t, v, l, s } satisfies Msg606);
   return makeDrum('AB-606', 'd606',
     { AC: '................', BD: '................', SD: '................', LT: '................', HT: '................',
       CY: '................', CH: '................', OH: '................' },
