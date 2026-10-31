@@ -281,6 +281,11 @@ test('dragging a panel title reorders the rows (display only), remembered across
   expect((await titles()).slice(0, 2)).toEqual(['AB-303 #1', 'AB-606']);
 });
 
+test('footer credits the author and shows the build version', async ({ page }) => {
+  await expect(page.locator('.credits a', { hasText: 'verytired' })).toHaveAttribute('href', 'https://verytired.net');
+  await expect(page.locator('.credits')).toContainText(/AB-3389 (v\d|[0-9a-f]{7})/); // a tag, or a hash when there is none
+});
+
 test('falls back to the JS engine when the WASM build cannot load', async ({ page }) => {
   await page.route('**/*.wasm', r => r.abort());
   await page.goto('./');

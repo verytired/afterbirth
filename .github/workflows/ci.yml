@@ -1,5 +1,6 @@
 # Every push and PR runs the checks. Pages deploys only from main, and releases are created
-# only from v* tags, both only after the checks pass
+# only from v* tags, both only after the checks pass. A release then rebuilds main, so the footer's
+# version (git describe) shows the new tag
 name: CI
 
 on:
@@ -7,6 +8,7 @@ on:
     branches: [main]
     tags: ['v*']
   pull_request:
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -16,6 +18,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # tags, for the version in the footer
       - uses: actions/setup-node@v4
         with:
           node-version: 24
@@ -31,7 +35,7 @@ jobs:
 
   deploy:
     needs: check
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     permissions:
       pages: write
@@ -49,6 +53,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      actions: write
     steps:
       - uses: actions/checkout@v4
         with:
@@ -57,5 +62,8 @@ jobs:
       - run: git fetch --force origin "refs/tags/$GITHUB_REF_NAME:refs/tags/$GITHUB_REF_NAME"
       # Release notes come from the annotated tag message
       - run: gh release create "$GITHUB_REF_NAME" --title "$GITHUB_REF_NAME" --notes-from-tag --verify-tag
+        env:
+          GH_TOKEN: ${{ github.token }}
+      - run: gh workflow run ci.yml --ref main
         env:
           GH_TOKEN: ${{ github.token }}
