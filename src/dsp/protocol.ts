@@ -21,3 +21,6 @@ export type DrumMsg =
 
 // Main thread -> 606 worklet: one drum hit (v: part index, l: level with accent, s: one 16th in seconds)
 export type Msg606 = { k: 'trig'; t: number; v: number; l: number; s: number };
+
+// Main thread -> 808 worklet: one hit (v: Voice808, l: LEVEL, a: accent amount or 0, p: the voice's KNOBS808 values)
+export type Msg808 = { k: 'trig'; t: number; v: number; l: number; a: number; p: number[] };

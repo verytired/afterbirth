@@ -24,7 +24,7 @@ Press ▶ to start (browsers keep audio suspended until the first click). Chrome
 | Unit | What it does |
 |---|---|
 | **AB-303 #1 / #2** | ENGINE (WASM / JS / CLASSIC), FILTER (DIODE / LADDER), MODS (see below), SAW / SQUARE, TUNE / CUTOFF / RESO / ENV MOD / DECAY / ACCENT. 16 steps with note, UP / DN, ACC (accent) and SLD (slide) |
-| **AB-808** | BD / SD / CH / OH / CP. Fully synthesized; CH chokes OH |
+| **AB-808** | All 16 voices: BD / SD / LT-MT-HT (or LC-MC-HC congas) / RS (or CL) / CP (or MA) / CB / CY / OH / CH, with the original's knobs and switches, AC (accent) row, STEPS 1-16. Sample-by-sample circuit model after the TR-808 Service Notes (WASM, JS fallback); CH chokes OH |
 | **AB-909** | BD / SD / LT / MT / HT / RS / CP / CH / OH / CR / RD, with the original's knobs (BD TUNE / ATTACK / DECAY, SD TUNE / TONE / SNAPPY, tom TUNE / DECAY, hat TUNE / DECAY, cymbal TUNE; hat TUNE is an extension, as on the TR-8S). AC row = accent steps (its knob sets the amount), FL row = flam steps (its knob sets the flam time). STEPS sets the pattern length (1–16); shorter patterns loop on their own against the other machines |
 | **AB-606** | AC (accent for the whole step) / BD / SD / LT / HT / CY / CH / OH. Modeled on the TR-606 circuit (bridged-T drums, six-square metal for hats and cymbal, CH cuts OH, OH decay follows the tempo); runs on a WASM engine (`assembly/tr606.ts`, JS twin `src/dsp/tr606.ts` as fallback, kept in sync by a unit test) |
 | **PATTERN** | 32 patterns per machine (1-8 × A-D). Switching while playing waits for the next bar. SHUFFLE on/off per pattern |
