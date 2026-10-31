@@ -209,20 +209,22 @@ export const make909 = () => makeDrum('AB-909', 'd909',
         tone(t, 'square', 1000, 1000, 0.001, l * 0.3 * atk, 0.002);
         nz(t, 0.02, 'lowpass', 3000, env(t, l * 0.5 * atk, 0.015));
       },
-      // Two bending oscillators + noise: TONE opens the noise filter, SNAPPY sets its level
+      // 909 snare vs 808: the noise leads (bright, broadband, with a short crack on the attack) and the two
+      // shells drop in pitch fast and die early. TONE opens the noise lowpass, SNAPPY sets the noise level
       SD: (t, l) => {
-        const m = tuned(kv('SDtune'), 0.6);
-        tone(t, 'triangle', 238 * m, 180 * m, 0.04, l * 0.5, 0.12);
-        tone(t, 'triangle', 370 * m, 330 * m, 0.04, l * 0.3, 0.08);
-        nz(t, 0.3, 'highpass', 900, env(t, l * 0.8 * kv('SDsnap'), 0.12 + 0.16 * kv('SDtone')), 3000 + 12000 * kv('SDtone'));
+        const m = tuned(kv('SDtune'), 0.6), tn = kv('SDtone');
+        tone(t, 'sine', 300 * m, 190 * m, 0.02, l * 0.45, 0.07);
+        tone(t, 'sine', 520 * m, 340 * m, 0.02, l * 0.2, 0.05);
+        nz(t, 0.02, 'highpass', 200, env(t, l * 0.5, 0.015));
+        nz(t, 0.4, 'highpass', 500, env(t, l * 1.1 * kv('SDsnap'), 0.16 + 0.14 * tn), 5000 + 13000 * tn);
       },
       LT: tom(95, 'LT'), MT: tom(140, 'MT'), HT: tom(200, 'HT'),
       RS: (t, l) => { ping(t, 500, l * 24, 0.04); ping(t, 1700, l * 16, 0.025); nz(t, 0.004, 'highpass', 4000, env(t, l * 0.3, 0.004)); },
       CP: (t, l) => {
-        const g = ctx.createGain(); g.connect(env(t, 1, 0.05));
-        [0, 0.011, 0.022, 0.033].forEach(o => { g.gain.setValueAtTime(l * 1.3, t + o); g.gain.setTargetAtTime(0, t + o, 0.004); });
+        const g = ctx.createGain(); g.connect(env(t, 1, 10)); // flat over the bursts
+        [0, 0.011, 0.022, 0.033].forEach(o => { g.gain.setValueAtTime(l * 4, t + o); g.gain.setTargetAtTime(0, t + o, 0.006); });
         nz(t, 0.05, 'bandpass', 1140, g, undefined, 2);
-        nz(t + 0.033, 0.3, 'bandpass', 1140, env(t + 0.033, l * 0.55, 0.25), undefined, 2);
+        nz(t + 0.033, 0.3, 'bandpass', 1140, env(t + 0.033, l * 1.6, 0.25), undefined, 2);
       },
       CH: (t, l) => { choke(oh, t); const dec = 0.03 + 0.12 * kv('CHdec'); playPcm('HH', t, 1, env(t, l * 0.7, dec), dec); },
       OH: (t, l) => { const dec = 0.15 + 0.75 * kv('OHdec'); oh = env(t, l * 0.7, dec); playPcm('HH', t, 1, oh, dec); },
@@ -236,7 +238,7 @@ export const make909 = () => makeDrum('AB-909', 'd909',
     steps: true,
     knobs: {
       BD: [['BDtune', 'TUNE', 0.5], ['BDatk', 'ATTACK', 0.5], ['BDdec', 'DECAY', 0.4]],
-      SD: [['SDtune', 'TUNE', 0.5], ['SDtone', 'TONE', 0.5], ['SDsnap', 'SNAPPY', 0.6]],
+      SD: [['SDtune', 'TUNE', 0.5], ['SDtone', 'TONE', 0.5], ['SDsnap', 'SNAPPY', 0.7]],
       LT: [['LTtune', 'TUNE', 0.5], ['LTdec', 'DECAY', 0.4]],
       MT: [['MTtune', 'TUNE', 0.5], ['MTdec', 'DECAY', 0.4]],
       HT: [['HTtune', 'TUNE', 0.5], ['HTdec', 'DECAY', 0.4]],
