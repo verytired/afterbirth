@@ -15,7 +15,7 @@ interface VoiceApi {
 interface PatDrum extends Pat { grid: boolean[][]; len?: number }
 type Knob = [name: string, label: string, def: number];
 // knobs: extra knobs per part (909). order: on-screen row order; grid rows stay in pat key order
-interface DrumOpts { knobs?: Record<string, Knob[]>; order?: string[]; steps?: boolean; flam?: string[] }
+interface DrumOpts { knobs?: Record<string, Knob[]>; order?: string[]; steps?: boolean; flam?: string[]; init?: () => void }
 
 // pat: { partName: 'x...x...' } for pattern A1. voices(api) returns { partName: hit }.
 // Parts without a voice are step flags: AC = accent (its knob: amount), FL = flam (its knob: time)
@@ -107,6 +107,7 @@ function makeDrum(name: string, cls: string, pat: Record<string, string>, voices
       noise = ctx.createBuffer(1, ctx.sampleRate * 2, ctx.sampleRate);
       const c = noise.getChannelData(0);
       for (let i = 0; i < c.length; i++) c[i] = Math.random() * 2 - 1;
+      opt.init?.();
     },
     // Patterns shorter than 16 steps loop on their own (polymeter) and restart when the pattern changes
     play(i, t, _d, sh) {
@@ -157,15 +158,24 @@ const hipass = (f: number, fs: number) => {
   let x1 = 0, x2 = 0, y1 = 0, y2 = 0;
   return (x: number) => { const y = b0 * x + b1 * x1 + b0 * x2 - a1 * y1 - a2 * y2; x2 = x1; x1 = x; y2 = y1; y1 = y; return y; };
 };
-// Stand-in for a cymbal ROM: squares + noise, highpassed, decaying, quantised to 6 bits at 18kHz and held
-// sample-by-sample at the context rate (the zero-order-hold images are part of the gritty top end)
-function pcm(dur: number, freqs: number[], noiseMix: number, hp: number, decay: number): AudioBuffer {
+// Stand-in for a cymbal ROM. A real cymbal is a dense set of inharmonic partials, the high ones dying first,
+// over noise; that is rendered here (seeded, so every load sounds the same), highpassed, quantised to 6 bits
+// at 18kHz and held sample-by-sample at the context rate (the zero-order-hold images are the gritty top end)
+interface Metal { dur: number; n: number; lo: number; hi: number; ring: number; bell?: number[]; noise: number; crash?: number; hp: number }
+function pcm({ dur, n: np, lo, hi, ring, bell = [], noise, crash = 0, hp }: Metal): AudioBuffer {
+  let seed = 909;
+  const rnd = () => (seed = (seed * 1103515245 + 12345) % 2147483648) / 2147483648;
+  const parts = [
+    ...Array.from({ length: np }, () => { const f = lo * (hi / lo) ** rnd(); return [f, 0.5 + rnd(), ring * Math.sqrt(lo / f) * (0.6 + 0.8 * rnd())]; }),
+    ...bell.map(f => [f, 3, ring * 2]),
+  ].map(([f, a, d]) => ({ w: 2 * Math.PI * f / PCM_RATE, a, k: Math.exp(-1 / (d * PCM_RATE)), ph: rnd() * 6.28 }));
   const n = dur * PCM_RATE | 0, v = new Float32Array(n), h1 = hipass(hp, PCM_RATE), h2 = hipass(hp, PCM_RATE);
   let pk = 0;
   for (let i = 0; i < n; i++) {
-    const t = i / PCM_RATE;
-    const m = freqs.reduce((a, f) => a + ((t * f) % 1 < 0.5 ? 1 : -1), 0) / freqs.length;
-    v[i] = h2(h1(m * (1 - noiseMix) + (Math.random() * 2 - 1) * noiseMix)) * Math.exp(-t / decay);
+    let m = 0;
+    for (const p of parts) { m += p.a * Math.sin(p.w * i + p.ph); p.a *= p.k; }
+    const t = i / PCM_RATE, nz = (rnd() * 2 - 1) * (noise * Math.exp(-t / ring) + crash * Math.exp(-t / 0.04));
+    v[i] = h2(h1(m / Math.sqrt(parts.length) + nz));
     pk = Math.max(pk, Math.abs(v[i]));
   }
   const buf = ctx.createBuffer(1, Math.ceil(n * ctx.sampleRate / PCM_RATE), ctx.sampleRate), d = buf.getChannelData(0);
@@ -173,9 +183,10 @@ function pcm(dur: number, freqs: number[], noiseMix: number, hp: number, decay: 
   return buf;
 }
 const PCM: Record<string, () => AudioBuffer> = {
-  HH: () => pcm(0.9, [205.3, 304.4, 369.6, 522.7, 540, 800].map(f => f * 1.5), 0.5, 6000, 0.45),
-  CR: () => pcm(2, [245, 312, 422, 517, 603, 788].map(f => f * 1.3), 0.6, 3500, 0.8),
-  RD: () => pcm(1.8, [340, 456, 588, 710, 905, 1170].map(f => f * 1.6), 0.25, 3000, 0.9),
+  // 909 hats and ride have marked resonances between 3 and 5kHz (DJ TechTools / Hannes Bieger)
+  HH: () => pcm({ dur: 0.9, n: 60, lo: 2500, hi: 8800, ring: 0.3, bell: [3350, 4100, 4750], noise: 0.5, hp: 2500 }),
+  CR: () => pcm({ dur: 2, n: 90, lo: 450, hi: 8800, ring: 0.9, noise: 0.6, crash: 1.2, hp: 1800 }),
+  RD: () => pcm({ dur: 1.8, n: 60, lo: 2000, hi: 8800, ring: 0.6, bell: [3150, 3600, 4200, 4900], noise: 0.15, hp: 1500 }),
 };
 const pcmBufs: Record<string, AudioBuffer> = {};
 const playPcm = (k: string, t: number, rate: number, dest: AudioNode, dur: number) => {
@@ -226,8 +237,9 @@ export const make909 = () => makeDrum('AB-909', 'd909',
         nz(t, 0.05, 'bandpass', 1140, g, undefined, 2);
         nz(t + 0.033, 0.3, 'bandpass', 1140, env(t + 0.033, l * 1.6, 0.25), undefined, 2);
       },
-      CH: (t, l) => { choke(oh, t); const dec = 0.03 + 0.12 * kv('CHdec'); playPcm('HH', t, 1, env(t, l * 0.7, dec), dec); },
-      OH: (t, l) => { const dec = 0.15 + 0.75 * kv('OHdec'); oh = env(t, l * 0.7, dec); playPcm('HH', t, 1, oh, dec); },
+      // CH and OH are one voice on the 909: each hit cuts whatever hat is still ringing
+      CH: (t, l) => { choke(oh, t); const dec = 0.03 + 0.12 * kv('CHdec'); oh = env(t, l * 0.7, dec); playPcm('HH', t, 1, oh, dec); },
+      OH: (t, l) => { choke(oh, t); const dec = 0.15 + 0.75 * kv('OHdec'); oh = env(t, l * 0.7, dec); playPcm('HH', t, 1, oh, dec); },
       CR: (t, l) => playPcm('CR', t, tuned(kv('CRtune'), 1), env(t, l * 0.6, 2), 2),
       RD: (t, l) => playPcm('RD', t, tuned(kv('RDtune'), 1), env(t, l * 0.6, 1.8), 1.8),
     };
@@ -235,6 +247,7 @@ export const make909 = () => makeDrum('AB-909', 'd909',
   {
     order: ['BD', 'SD', 'LT', 'MT', 'HT', 'RS', 'CP', 'CH', 'OH', 'CR', 'RD', 'AC', 'FL'],
     flam: ['BD', 'SD', 'LT', 'MT', 'HT'],
+    init: () => Object.keys(PCM).forEach(k => pcmBufs[k] ??= PCM[k]()), // render the cymbal ROMs up front
     steps: true,
     knobs: {
       BD: [['BDtune', 'TUNE', 0.5], ['BDatk', 'ATTACK', 0.5], ['BDdec', 'DECAY', 0.4]],
