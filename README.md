@@ -68,6 +68,14 @@ A second row of controls inspired by the Devil Fish modification of the TB-303 (
 | **SELF OSC** | Lets RESO push the filter into self-oscillation (use TRACK to play it in tune) |
 | **DBS A / B** | Dynamic Bank Switching: while the chosen drum part hits on a step, or while the button is held, that step is read from the pattern with bit A / B of its number flipped (A1 ↔ A2 / A3) |
 
+**SAVE / LOAD** (in the SONG box) write and read a song file (`.song.json`): every pattern of every machine, the song and its knob automation, tempo, every knob and selector (including MODS, ENGINE, FILTER, mixer and effects) and the toggle buttons. Loading replaces the current state. The output device is not stored, since it belongs to the computer.
+
+Bundled songs live in `public/songs/` (download them from the [repository](public/songs) and LOAD):
+
+| Song | |
+|---|---|
+| [`devil-fish.song.json`](public/songs/devil-fish.song.json) | A 2:40 acid track at 136 BPM made only with the Devil Fish style MODS: overdriven and muffled bassline with extended env mod, filter FM and DBS from the open hats, and a self-oscillating lead played by the filter. Built by `scripts/devil-fish.mjs` |
+
 Any song row's `# comment` is shown as a caption in the top bar while that row plays.
 
 The stock panel also gets the Devil Fish ranges: **ENV MOD** goes to 3× the stock maximum, and **DECAY** stretches from 15 ms to 3 s with the far right position holding the filter open. Both keep their stock sound at the default position.
@@ -129,6 +137,7 @@ From **REC** in the top bar.
 | `npm test` | Unit tests (Vitest): helpers in `src/lib.ts`, and the 303 engine (determinism, stability at max settings, WASM output matching JS) |
 | `npm run e2e` | Builds, then drives the production build in Chrome with Playwright: playback level, pattern banks, MIDI clock, WAV and stem export (stems must sum back to MASTER), engine switching, fallback to JS when the WASM file is blocked |
 | `npm run check` | All of the above |
+| `node scripts/record-demo.mjs <song> <out.mp4> <url>` | Records a bundled song with the app's VIDEO recorder (1080p, MASTER audio) against a built app (`npm run build && npx vite preview`) |
 
 Code lives in `src/`: `tb303.ts` and `drums.ts` (machines), `dsp/` (303 voice engine and its AudioWorklet), `audio.ts` (effects, master, mixer), `transport.ts`, `midi.ts`, `record.ts`, `output.ts`, wired together in `main.ts`. The AssemblyScript port of the engine is in `assembly/`; `npm run dev`, `build` and `test` compile it to `src/dsp/voice.wasm` first.
 

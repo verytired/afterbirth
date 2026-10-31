@@ -133,3 +133,21 @@ export function lerpKeys(keys: [number, number][], x: number): number {
   }
   return keys[keys.length - 1][1];
 }
+
+// Song file (JSON): format check. Throws with a readable message
+export const SONG_FORMAT = 'afterbirth-song';
+export interface SongFileData {
+  format: string; version: number; tempo: number;
+  patterns: Record<string, unknown[]>;
+  song: { text: string; on: boolean; auto: Record<number, Record<string, number>> };
+  controls: Record<string, string>; // knob / select values by automation key
+  toggles: Record<string, boolean>; // toggle buttons (mute, inserts, effect units, modes)
+}
+export function checkSongFile(x: unknown): SongFileData {
+  const f = x as Partial<SongFileData> | null;
+  if (!f || typeof f !== 'object' || f.format !== SONG_FORMAT) throw new Error('not an AfterBirth song file');
+  if (f.version !== 1) throw new Error(`unsupported version ${String(f.version)}`);
+  if (typeof f.tempo !== 'number' || typeof f.song?.text !== 'string' || !f.patterns || typeof f.patterns !== 'object' || !f.controls || typeof f.controls !== 'object')
+    throw new Error('broken song file');
+  return { ...f, toggles: f.toggles ?? {}, song: { text: f.song.text, on: !!f.song.on, auto: f.song.auto ?? {} } } as SongFileData;
+}

@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { wav, crc32, zip, PCF_PATS, shuffleOffset, slotBank, slotNum, withBank, withNum, stemName, parseSong, songBars, songRowAt, songEnds, songCaptions, songRowIndexAt, parse303, lerpKeys } from './lib';
+import { readdirSync, readFileSync } from 'node:fs';
+import { wav, crc32, zip, PCF_PATS, shuffleOffset, slotBank, slotNum, withBank, withNum, stemName, parseSong, songBars, songRowAt, songEnds, songCaptions, songRowIndexAt, checkSongFile, SONG_FORMAT, parse303, lerpKeys } from './lib';
 
 describe('wav', () => {
   it('writes a 16-bit stereo header and interleaved, clamped samples', () => {
@@ -112,4 +113,32 @@ describe('song', () => {
     const k: [number, number][] = [[0, 0], [10, 1], [20, 0]];
     expect([lerpKeys(k, -1), lerpKeys(k, 5), lerpKeys(k, 15), lerpKeys(k, 99)]).toEqual([0, 0.5, 0.5, 0]);
   });
+});
+
+describe('checkSongFile', () => {
+  const ok = { format: SONG_FORMAT, version: 1, tempo: 130, patterns: {}, song: { text: 'A1 x4', on: true, auto: {} }, controls: {} };
+  it('accepts a valid file and fills optional parts', () => {
+    expect(checkSongFile(ok)).toMatchObject({ tempo: 130, toggles: {}, song: { text: 'A1 x4', on: true } });
+    expect(checkSongFile({ ...ok, song: { text: '' } }).song).toEqual({ text: '', on: false, auto: {} });
+  });
+  it('rejects other JSON with a readable message', () => {
+    expect(() => checkSongFile(null)).toThrow('not an AfterBirth song file');
+    expect(() => checkSongFile({ ...ok, format: 'x' })).toThrow('not an AfterBirth song file');
+    expect(() => checkSongFile({ ...ok, version: 2 })).toThrow('unsupported version 2');
+    expect(() => checkSongFile({ ...ok, tempo: '130' })).toThrow('broken song file');
+    expect(() => checkSongFile({ ...ok, patterns: undefined })).toThrow('broken song file');
+  });
+});
+
+describe('bundled songs (public/songs)', () => {
+  const dir = new URL('../public/songs/', import.meta.url);
+  for (const name of readdirSync(dir).filter(n => n.endsWith('.song.json'))) {
+    it(`${name} is a valid song file`, () => {
+      const f = checkSongFile(JSON.parse(readFileSync(new URL(name, dir), 'utf8')));
+      expect(Object.keys(f.patterns)).toEqual(['AB-303 #1', 'AB-303 #2', 'AB-808', 'AB-909']);
+      for (const p of Object.values(f.patterns)) expect(p).toHaveLength(32);
+      expect(songBars(parseSong(f.song.text))).toBeGreaterThan(0);
+      expect(songEnds(f.song.text)).toBe(true);
+    });
+  }
 });

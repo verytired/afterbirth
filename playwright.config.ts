@@ -10,7 +10,8 @@ export default defineConfig({
   use: {
     baseURL: `http://localhost:${port}/`,
     channel: process.env.CI ? undefined : 'chrome',
-    launchOptions: { args: ['--autoplay-policy=no-user-gesture-required'] },
+    // fake audio sink: tests should not depend on this computer's sound device
+    launchOptions: { args: ['--autoplay-policy=no-user-gesture-required', '--disable-audio-output'] },
   },
   webServer: {
     command: `npm run build && npx vite preview --port ${port} --strictPort`,

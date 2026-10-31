@@ -56,7 +56,7 @@ export const FX = {
   },
 };
 
-const pcfNum = numbox($('pcfnum'), 1, 32, 1);
+export const pcfNum = numbox($('pcfnum'), 1, 32, 1);
 export function pcfStep(i: number, t: number) {
   const base = 80 * Math.pow(100, fv('pfreq'));
   const peak = Math.min(16000, base * (1 + fv('pamt') * PCF_PATS[pcfNum.value - 1][i] * 15));
@@ -67,7 +67,7 @@ export function pcfStep(i: number, t: number) {
   }
 }
 
-const dSteps = numbox($('dsteps'), 1, 16, 3);
+export const dSteps = numbox($('dsteps'), 1, 16, 3);
 class Delay {
   enabled = true; mode = 1; time = 0;
   inp!: GainNode; d!: DelayNode; fb!: GainNode; pan!: StereoPannerNode; ret!: GainNode;

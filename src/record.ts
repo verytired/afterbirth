@@ -17,7 +17,7 @@ interface Source { name: string; node: AudioNode; gain?: number }
 interface Recorder { stop(): { name: string; data: Uint8Array }[] }
 let wavRec: Recorder | null = null, stemRec: Recorder | null = null, vidRec: MediaRecorder | null = null, recT0 = 0;
 
-function download(blob: Blob, ext: string) {
+export function download(blob: Blob, ext: string) {
   const d = new Date(), p = (n: number) => String(n).padStart(2, '0');
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
