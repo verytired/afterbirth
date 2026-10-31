@@ -49,6 +49,14 @@ h2{margin:0 0 10px;font-size:18px;font-style:italic;font-weight:900;letter-spaci
 @keyframes blink{50%{background:#555;color:#ddd}}
 
 /* Machine panels */
+.panel>h2{cursor:grab;user-select:none}
+.dev.dragging{opacity:.5}
+.panel>h2::after{content:' \25BE';font-size:12px;font-style:normal;opacity:.6}
+.dev.closed{grid-template-columns:1fr !important}
+.dev.closed>.bankbox,.dev.closed>.mix,.dev.closed .panel>:not(h2){display:none}
+.dev.closed .panel{padding:6px 22px}
+.dev.closed h2{margin:0}
+.dev.closed h2::after{content:' \25B8'}
 .panel{position:relative;padding:14px 22px;border-radius:3px;color:#111;min-width:0;
   background:var(--screw) 4px 4px/14px 14px no-repeat,var(--screw) right 4px top 4px/14px 14px no-repeat,
     var(--screw) left 4px bottom 4px/14px 14px no-repeat,var(--screw) right 4px bottom 4px/14px 14px no-repeat,linear-gradient(#e6e6e6,#acacac)}

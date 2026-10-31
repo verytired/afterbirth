@@ -2,7 +2,7 @@ import './style.css';
 import { knobify } from './dom';
 import { ctx, playing, setExt } from './state';
 import { FX, channels, master, wireFx } from './audio';
-import { machines, save } from './rack';
+import { machines, save, wireRows } from './rack';
 import { make303 } from './tb303';
 import { make606, make808, make909 } from './drums';
 import { cur, ensureAudio, tempo, wireTransport } from './transport';
@@ -23,6 +23,7 @@ machines.push(
 );
 machines.forEach(m => m.rackReady?.());
 knobify(); // after all machines are mounted
+wireRows();
 
 wireFx();
 wireTransport();
