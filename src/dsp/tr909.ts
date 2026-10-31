@@ -81,10 +81,11 @@ export function recipe(v: Voice909, l: number, p: number[], a = 0): Comp[] {
 // Stand-in for the cymbal ROMs. A real cymbal is a dense set of inharmonic partials, the high ones dying
 // first, over noise; that is rendered here (seeded, so every load sounds the same), highpassed and quantised
 // to 6 bits at 18 kHz. Drum909 plays it back with a zero-order hold, as the 909's DAC does
-interface Metal { dur: number; n: number; lo: number; hi: number; ring: number; bell?: number[]; noise: number; crash?: number; hp: number }
+interface Metal { dur: number; n: number; lo: number; hi: number; ring: number; bell?: number[]; bellAmp?: number; noise: number; crash?: number; hp: number }
 const METALS: Metal[] = [
   // 909 hats and ride have marked resonances between 3 and 5 kHz (DJ TechTools / Hannes Bieger)
-  { dur: 0.9, n: 60, lo: 2500, hi: 8800, ring: 0.3, bell: [3350, 4100, 4750], noise: 0.5, hp: 2500 },        // HH
+  // HH is mostly noise: a recorded hi-hat is a 'shh' with a metallic tint, not a chord (audibly so on OH)
+  { dur: 0.9, n: 200, lo: 2500, hi: 8800, ring: 0.3, bell: [3350, 4100, 4750], bellAmp: 1, noise: 1.6, hp: 2500 }, // HH
   { dur: 2, n: 90, lo: 450, hi: 8800, ring: 0.9, noise: 0.6, crash: 1.2, hp: 1800 },                         // CR
   { dur: 1.8, n: 60, lo: 2000, hi: 8800, ring: 0.6, bell: [3150, 3600, 4200, 4900], noise: 0.15, hp: 1500 }, // RD
 ];
@@ -94,12 +95,12 @@ const hipass = (f: number, fs: number) => { // RBJ highpass, Q 1/sqrt2
   let x1 = 0, x2 = 0, y1 = 0, y2 = 0;
   return (x: number) => { const y = b0 * x + b1 * x1 + b0 * x2 - a1 * y1 - a2 * y2; x2 = x1; x1 = x; y2 = y1; y1 = y; return y; };
 };
-function metal({ dur, n: np, lo, hi, ring, bell = [], noise, crash = 0, hp }: Metal): Int8Array {
+function metal({ dur, n: np, lo, hi, ring, bell = [], bellAmp = 3, noise, crash = 0, hp }: Metal): Int8Array {
   let seed = 909;
   const rnd = () => (seed = (seed * 1103515245 + 12345) % 2147483648) / 2147483648;
   const parts = [
     ...Array.from({ length: np }, () => { const f = lo * (hi / lo) ** rnd(); return [f, 0.5 + rnd(), ring * Math.sqrt(lo / f) * (0.6 + 0.8 * rnd())]; }),
-    ...bell.map(f => [f, 3, ring * 2]),
+    ...bell.map(f => [f, bellAmp, ring * 2]),
   ].map(([f, a, d]) => ({ w: 2 * Math.PI * f / PCM_RATE, a, k: Math.exp(-1 / (d * PCM_RATE)), ph: rnd() * 6.28 }));
   const n = dur * PCM_RATE | 0, v = new Float64Array(n), h1 = hipass(hp, PCM_RATE), h2 = hipass(hp, PCM_RATE);
   let pk = 0;
