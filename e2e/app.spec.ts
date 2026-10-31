@@ -243,6 +243,14 @@ test('606 plays on the WASM engine', async ({ page }) => {
   expect(await channelPeak(page, 4, 1500)).toBeGreaterThan(0.1);
 });
 
+test('808 plays on the WASM engine, congas included', async ({ page }) => {
+  await page.selectOption('.d808 [name=LTsw]', '1');
+  for (const c of [2, 6, 10, 14]) await page.click(`.d808 [data-r="5"][data-c="${c}"]`); // LT row, now LC
+  await play(page); // A1 has a beat
+  await expect(page.locator('.d808')).toHaveAttribute('data-engine', 'wasm');
+  expect(await channelPeak(page, 2, 1500)).toBeGreaterThan(0.1);
+});
+
 test('falls back to the JS engine when the WASM build cannot load', async ({ page }) => {
   await page.route('**/*.wasm', r => r.abort());
   await page.goto('./');
@@ -255,6 +263,8 @@ test('falls back to the JS engine when the WASM build cannot load', async ({ pag
   await bd606(page);
   await expect(page.locator('.d606')).toHaveAttribute('data-engine', 'js');
   expect(await channelPeak(page, 4, 1500)).toBeGreaterThan(0.1);
+  await expect(page.locator('.d808')).toHaveAttribute('data-engine', 'js');
+  expect(await channelPeak(page, 2, 1500)).toBeGreaterThan(0.1);
   errors = errors.filter(e => !e.includes('ERR_FAILED')); // the aborted .wasm request itself
 });
 

@@ -4,9 +4,10 @@ import { BD, SD, LT, HT, CY, CH, OH } from './dsp/tr606';
 import { loadPats, makeBank, mountDevice, type Machine, type Pat } from './rack';
 import { numbox } from './dom';
 import { config } from './config';
-import { load606, loadDrums } from './dsp/load';
+import { load606, load808, loadDrums } from './dsp/load';
+import { V808, VOICES808, KNOBS808, type Voice808 } from './dsp/tr808';
 import { KNOBS, VOICES, makeRom } from './dsp/tr909';
-import type { DrumMsg, EngineName, Msg606, ProcessorMsg } from './dsp/protocol';
+import type { DrumMsg, EngineName, Msg606, Msg808, ProcessorMsg } from './dsp/protocol';
 
 type Hit = (t: number, level: number, accent: number, step: number) => void; // accent: AC amount on accented steps, else 0. step: one 16th in seconds
 interface VoiceApi {
@@ -134,18 +135,49 @@ function makeDrum(name: string, cls: string, pat: Record<string, string>, voices
   };
 }
 
-export const make808 = () => makeDrum('AB-808', 'd808',
-  { BD: 'x...x...x...x..x', SD: '....x.......x...', CH: 'x...x...x...x...', OH: '..x...x...x...x.', CP: '............x...' },
-  ({ env, nz, tone, choke, clap }) => {
-    let oh: GainNode | undefined;
-    return {
-      BD: (t, l) => tone(t, 'sine', 150, 45, 0.12, l, 0.6),
-      SD: (t, l) => { tone(t, 'triangle', 185, 175, 0.1, l * 0.5, 0.12); nz(t, 0.2, 'highpass', 1200, env(t, l * 0.6, 0.2)); },
-      CH: (t, l) => { choke(oh, t); nz(t, 0.06, 'highpass', 7000, env(t, l * 0.4, 0.05)); },
-      OH: (t, l) => { oh = env(t, l * 0.4, 0.35); nz(t, 0.35, 'highpass', 7000, oh); },
-      CP: (t, l) => clap(t, l, 1100),
-    };
-  });
+// The sound comes from the 808 engine (src/dsp/tr808.ts, WASM build in assembly/tr808.ts) in an AudioWorklet.
+// Grid rows keep the original part order (saved patterns are positional, newer parts appended); the panel
+// shows the 808's order. The TOM / CONGA, RS / CL and CP / MA switches pick the voice at hit time, as on the 808
+export const make808 = () => {
+  let node: AudioWorkletNode | undefined, root: HTMLElement;
+  const val = (n: string) => +root.querySelector<HTMLInputElement | HTMLSelectElement>(`[name=${n}]`)!.value;
+  // Accent goes to the engine as an amount: each 808 voice has its own accented level (SN p.14)
+  const trig = (k: string, alt?: Voice808): Hit => (t, _l, a) => {
+    const v = alt !== undefined && val(k + 'sw') ? alt : V808[k as keyof typeof V808];
+    node?.port.postMessage({ k: 'trig', t, v, l: val(k), a, p: KNOBS808[VOICES808[v]].map(val) } satisfies Msg808);
+  };
+  const SW: [string, string, string][] = [['LT', 'LT', 'LC'], ['MT', 'MT', 'MC'], ['HT', 'HT', 'HC'], ['RS', 'RS', 'CL'], ['CP', 'CP', 'MA']];
+  const e = '................';
+  return makeDrum('AB-808', 'd808',
+    { BD: 'x...x...x...x..x', SD: '....x.......x...', CH: 'x...x...x...x...', OH: '..x...x...x...x.', CP: '............x...',
+      LT: e, MT: e, HT: e, RS: e, CB: e, CY: e, AC: e },
+    () => ({
+      BD: trig('BD'), SD: trig('SD'), LT: trig('LT', V808.LC), MT: trig('MT', V808.MC), HT: trig('HT', V808.HC),
+      RS: trig('RS', V808.CL), CP: trig('CP', V808.MA), CB: trig('CB'), CY: trig('CY'), OH: trig('OH'), CH: trig('CH'),
+    }),
+    {
+      order: ['BD', 'SD', 'LT', 'MT', 'HT', 'RS', 'CP', 'CB', 'CY', 'OH', 'CH', 'AC'],
+      steps: true,
+      head: SW.map(([k, a, b]) => `<label>${a}/${b} <select name="${k}sw"><option value="0">${a}</option><option value="1">${b}</option></select></label>`).join(''),
+      knobs: {
+        BD: [['BDtone', 'TONE', 0.5], ['BDdec', 'DECAY', 0.5]],
+        SD: [['SDtone', 'TONE', 0.5], ['SDsnap', 'SNAPPY', 0.5]],
+        LT: [['LTtune', 'TUNING', 0.5]], MT: [['MTtune', 'TUNING', 0.5]], HT: [['HTtune', 'TUNING', 0.5]],
+        CY: [['CYtone', 'TONE', 0.5], ['CYdec', 'DECAY', 0.5]],
+        OH: [['OHdec', 'DECAY', 0.5]],
+      },
+      async init(out, r) {
+        root = r;
+        const wasm = await load808(ctx);
+        node = new AudioWorkletNode(ctx, 'tr808', { numberOfInputs: 0, numberOfOutputs: 1, outputChannelCount: [1], processorOptions: { wasm } });
+        node.port.onmessage = (e: MessageEvent<ProcessorMsg>) => {
+          if (e.data.k === 'engine') r.dataset.engine = e.data.name;
+          if (e.data.k === 'error') console.warn('808 engine:', e.data.msg);
+        };
+        node.connect(out);
+      },
+    });
+};
 
 // Empty by default (so it does not double the 808). Program your own.
 // Grid rows keep the original part order (saved patterns are positional); the panel shows the 909's order.
