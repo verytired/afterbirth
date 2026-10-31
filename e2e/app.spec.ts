@@ -281,6 +281,17 @@ test('dragging a panel title reorders the rows (display only), remembered across
   expect((await titles()).slice(0, 2)).toEqual(['AB-303 #1', 'AB-606']);
 });
 
+test('faders: dragging the cap moves the value, double-click resets it', async ({ page }) => {
+  const f = page.locator('#mvol + .fdr'), box = (await f.boundingBox())!;
+  await page.mouse.move(box.x + 17, box.y + 30);
+  await page.mouse.down();
+  await page.mouse.move(box.x + 17, box.y + 75, { steps: 5 });
+  await page.mouse.up();
+  expect(+await page.inputValue('#mvol')).toBeLessThan(0.5);
+  await f.dblclick();
+  expect(await page.inputValue('#mvol')).toBe('0.8');
+});
+
 test('footer credits the author and shows the build version', async ({ page }) => {
   await expect(page.locator('.credits a', { hasText: 'verytired' })).toHaveAttribute('href', 'https://verytired.net');
   await expect(page.locator('.credits')).toContainText(/AB-3389 (v\d|[0-9a-f]{7})/); // a tag, or a hash when there is none

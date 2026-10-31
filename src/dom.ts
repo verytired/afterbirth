@@ -31,24 +31,27 @@ export function numbox(el: HTMLElement, min: number, max: number, val: number, o
   return box;
 }
 
-// Replace range inputs with rotary knobs (the hidden input keeps the value, so other code reads it as before).
-// Must run after every machine has been mounted
+// Replace range inputs with rotary knobs, and .fader ones with ReBirth-style vertical faders (the hidden input
+// keeps the value, so other code reads it as before). Must run after every machine has been mounted
 export function knobify() {
-  document.querySelectorAll<HTMLInputElement>('input[type=range]:not(.fader)').forEach(inp => {
-    const k = document.createElement('div'), min = +inp.min, max = +inp.max;
-    k.className = 'knob'; k.tabIndex = 0; k.setAttribute('role', 'slider');
+  document.querySelectorAll<HTMLInputElement>('input[type=range]').forEach(inp => {
+    const k = document.createElement('div'), min = +inp.min, max = +inp.max, fader = inp.classList.contains('fader');
+    k.className = fader ? 'fdr' : 'knob'; k.tabIndex = 0; k.setAttribute('role', 'slider');
+    if (fader) k.setAttribute('aria-orientation', 'vertical');
     k.setAttribute('aria-label', inp.name || inp.id);
     inp.hidden = true; inp.after(k);
     inp.addEventListener('input', () => set()); // follow programmatic changes (song automation)
     const set = (val?: number | string) => {
       if (val !== undefined) { inp.value = String(val); inp.dispatchEvent(new Event('input')); }
-      k.style.setProperty('--a', ((+inp.value - min) / (max - min) * 270 - 135) + 'deg');
+      const r = (+inp.value - min) / (max - min);
+      if (fader) k.style.setProperty('--p', String(r)); else k.style.setProperty('--a', (r * 270 - 135) + 'deg');
       k.setAttribute('aria-valuenow', inp.value);
     };
     k.onpointerdown = e => {
       k.setPointerCapture(e.pointerId);
       const y0 = e.clientY, v0 = +inp.value;
-      k.onpointermove = e => set(v0 + (y0 - e.clientY) / 150 * (max - min));
+      const travel = fader ? k.clientHeight - 20 : 150; // a fader's cap follows the pointer
+      k.onpointermove = e => set(Math.min(max, Math.max(min, v0 + (y0 - e.clientY) / travel * (max - min))));
     };
     k.onpointerup = () => { k.onpointermove = null; };
     k.ondblclick = () => set(inp.defaultValue);

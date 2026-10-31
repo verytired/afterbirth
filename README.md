@@ -36,7 +36,8 @@ Press ▶ to start (browsers keep audio suspended until the first click). Chrome
 | **DIST** | AMOUNT, SHAPE (soft clip to wavefold) |
 | **COMP** | RATIO, THRES |
 
-- Drag knobs up/down to turn them, double-click to reset. Arrow keys work when a knob has focus
+- Drag knobs up/down to turn them, double-click to reset. Arrow keys work when a knob has focus. Faders work the same way, the cap following the pointer
+- Click a machine's title to fold its row (pattern and MIX too) to one line; it keeps playing. Drag the title (or Alt+↑/↓) to reorder the rows. Both are remembered in the browser and only change the display: song slots, song files and MULTI OUT channels keep the original order
 - LED displays such as TEMPO change with −/+, the mouse wheel, or a vertical drag
 - Patterns autosave to localStorage (knob and mixer values are not saved)
 
