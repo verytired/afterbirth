@@ -251,6 +251,19 @@ test('808 plays on the WASM engine, congas included', async ({ page }) => {
   expect(await channelPeak(page, 2, 1500)).toBeGreaterThan(0.1);
 });
 
+test('panel title folds the panel, remembered across reloads; the machine keeps playing', async ({ page }) => {
+  await page.click('.d808 > h2');
+  await expect(page.locator('.d808 .drums')).toBeHidden();
+  await page.reload();
+  await expect(page.locator('.d808 .drums')).toBeHidden();
+  await expect(page.locator('.dev.closed .mix')).toBeHidden();
+  await expect(page.locator('.d909 .drums')).toBeVisible();
+  await play(page);
+  expect(await channelPeak(page, 2, 1500)).toBeGreaterThan(0.1);
+  await page.click('.d808 > h2');
+  await expect(page.locator('.d808 .drums')).toBeVisible();
+});
+
 test('falls back to the JS engine when the WASM build cannot load', async ({ page }) => {
   await page.route('**/*.wasm', r => r.abort());
   await page.goto('./');

@@ -32,6 +32,25 @@ export function save() {
   try { localStorage.setItem(KEY, JSON.stringify(Object.fromEntries(machines.map(m => [m.name, m.pats])))); } catch { /* storage unavailable */ }
 }
 
+// Clicking a panel's title folds the machine's row (pattern and MIX columns too) to that line. Remembered per machine
+const FOLD = 'ab3389-fold';
+export function wireFold() {
+  let closed: string[] = [];
+  try { closed = JSON.parse(localStorage.getItem(FOLD) ?? '[]') || []; } catch { /* storage unavailable */ }
+  document.querySelectorAll<HTMLElement>('.panel > h2').forEach(h => {
+    const row = h.parentElement!.parentElement!, name = h.textContent!;
+    const set = (shut: boolean) => { row.classList.toggle('closed', shut); h.setAttribute('aria-expanded', String(!shut)); };
+    h.tabIndex = 0; h.setAttribute('role', 'button');
+    set(closed.includes(name));
+    h.onclick = () => {
+      set(!row.classList.contains('closed'));
+      closed = [...document.querySelectorAll('.dev.closed .panel > h2')].map(e => e.textContent!);
+      try { localStorage.setItem(FOLD, JSON.stringify(closed)); } catch { /* storage unavailable */ }
+    };
+    h.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); h.click(); } };
+  });
+}
+
 // One machine row: pattern column / panel / MIX column
 export function mountDevice(cls: string): [HTMLElement, HTMLElement, HTMLElement] {
   const row = document.createElement('div');
