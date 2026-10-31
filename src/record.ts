@@ -6,10 +6,13 @@ import { machines } from './rack';
 import { ensureAudio } from './transport';
 import { stemName, wav, zip } from './lib';
 
-// One AudioWorklet with an input per source, so all sources stay sample-aligned
+// One AudioWorklet with an input per source, so all sources stay sample-aligned. Connections made while
+// audio runs can land in different render blocks, so every tap opens at one shared block boundary and the
+// worklet only keeps blocks from that frame on
 // ponytail: buffers everything in memory (~200MB per 10 min per stereo source). Stream to disk for long takes
 const REC_WORKLET = `registerProcessor('rec', class extends AudioWorkletProcessor {
-  process(inputs) { this.port.postMessage(inputs.map(inp => inp.map(c => c.slice()))); return true; }
+  constructor() { super(); this.from = Infinity; this.port.onmessage = e => { this.from = e.data; }; }
+  process(inputs) { if (currentFrame >= this.from) this.port.postMessage(inputs.map(inp => inp.map(c => c.slice()))); return true; }
 });`;
 let recReady = false;
 
@@ -32,9 +35,12 @@ async function startRecorder(sources: Source[]): Promise<Recorder> {
     recReady = true;
   }
   const node = new AudioWorkletNode(ctx, 'rec', { numberOfInputs: sources.length, numberOfOutputs: 0, channelCount: 2, channelCountMode: 'explicit' });
+  const from = Math.ceil((ctx.currentTime + 0.1) * ctx.sampleRate / 128) * 128; // a block boundary safely ahead
+  node.port.postMessage(from);
   const taps = sources.map((s, i) => {
     const g = ctx.createGain();
-    g.gain.value = s.gain ?? 1;
+    g.gain.value = 0;
+    g.gain.setValueAtTime(s.gain ?? 1, from / ctx.sampleRate);
     s.node.connect(g).connect(node, 0, i);
     return g;
   });
