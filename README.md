@@ -67,8 +67,9 @@ Per-machine outputs are taken after the fader and inserts (DIST / PCF / COMP). D
 From **REC** in the top bar.
 
 - **● WAV**: records MASTER (post-fader) as a 16-bit stereo WAV. Press again to stop and download `afterbirth-YYYYMMDD-HHMMSS.wav`, ready to drop into a DAW
+- **● STEMS**: records MASTER, each machine and the delay return at the same time, sample-aligned, and downloads them as a zip (`00-master.wav`, `01-ab-303-1.wav`, … `05-delay-return.wav`). Machine stems are post-fader/inserts with the same -6dB master trim, so the stems sum back to the mix before master COMP / master fader
 - **● VIDEO**: pick the AB tab in the screen-share dialog to record the screen together with MASTER audio. Press again, or stop sharing, to finish. mp4 in Chrome, webm elsewhere
-- Recordings are buffered in memory, so long takes are not a good fit (about 200MB per 10 minutes)
+- Recordings are buffered in memory, so long takes are not a good fit (about 200MB per 10 minutes per stereo track; STEMS records six)
 
 ## License
 

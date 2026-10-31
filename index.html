@@ -132,6 +132,7 @@ h2{margin:0 0 10px;font-size:18px;font-style:italic;font-weight:900;letter-spaci
       <button class="tog" id="multi" title="1/2 MASTER, 3/4 303#1, 5/6 303#2, 7/8 808, 9/10 909">MULTI OUT</button></span></label>
     <label>MIDI CLOCK <span class="row" style="gap:6px;align-items:center"><button class="tog" id="ext">EXT SYNC</button><span class="led-btn" id="beat" style="width:14px"></span></span></label>
     <label>REC <span class="row" style="gap:6px;align-items:center"><button class="tog" id="rec" title="Record MASTER to WAV">● WAV</button>
+      <button class="tog" id="stems" title="Record MASTER, each machine and the delay return as separate WAVs (zip)">● STEMS</button>
       <button class="tog" id="vid" title="Record the screen with MASTER audio">● VIDEO</button><span class="led" id="rectime">0:00</span></span></label>
     <div class="logo">AfterBirth<small>AB-3389</small></div>
   </div>
@@ -393,6 +394,7 @@ function makeChannel(el, level = 0.8) {
     const pan = ctx.createStereoPanner(), lvl = ctx.createGain(), send = ctx.createGain();
     node.connect(pan).connect(lvl).connect(master.inp);
     lvl.connect(send).connect(delay.inp);
+    ch.out = lvl;
     tapTo(lvl, 2 + 2 * channels.indexOf(ch));
     ch.update = () => {
       pan.pan.value = v('pan');
@@ -742,13 +744,13 @@ $('play').onclick = async () => {
 };
 $('stop').onclick = () => { if (!ext) stop(); };
 
-// ---------- Recording (WAV) and video ----------
-// Records MASTER post-fader. WAV collects raw PCM via AudioWorklet and writes 16-bit
-// ponytail: buffers everything in memory (~200MB per 10 min). Stream to disk for long takes
+// ---------- Recording (WAV / stems) and video ----------
+// One AudioWorklet with an input per source, so all sources stay sample-aligned. Writes 16-bit WAV
+// ponytail: buffers everything in memory (~200MB per 10 min per stereo source). Stream to disk for long takes
 const REC_WORKLET = `registerProcessor('rec', class extends AudioWorkletProcessor {
-  process([inp]) { if (inp.length) this.port.postMessage(inp.map(c => c.slice())); return true; }
+  process(inputs) { this.port.postMessage(inputs.map(inp => inp.map(c => c.slice()))); return true; }
 });`;
-let recNode, vidRec, recT0 = 0, recReady = false;
+let wavRec, stemRec, vidRec, recT0 = 0, recReady = false;
 
 function download(blob, ext) {
   const d = new Date(), p = n => String(n).padStart(2, '0');
@@ -774,11 +776,63 @@ function wav(L, R, sr) {
         v.setInt16(o, x < 0 ? x * 0x8000 : x * 0x7fff, true);
         o += 2;
       }
-  return new Blob([v], {type: 'audio/wav'});
+  return new Uint8Array(v.buffer);
+}
+
+// Minimal ZIP writer (stored, no compression)
+const CRC = Array.from({length: 256}, (_, n) => { for (let k = 0; k < 8; k++) n = n & 1 ? 0xEDB88320 ^ (n >>> 1) : n >>> 1; return n >>> 0; });
+const crc32 = b => { let c = ~0; for (let i = 0; i < b.length; i++) c = CRC[(c ^ b[i]) & 255] ^ (c >>> 8); return ~c >>> 0; };
+function zip(files) {
+  const parts = [], dir = [];
+  let off = 0;
+  for (const f of files) {
+    const name = new TextEncoder().encode(f.name), crc = crc32(f.data), n = f.data.length;
+    const h = new DataView(new ArrayBuffer(30));
+    h.setUint32(0, 0x04034b50, true); h.setUint16(4, 20, true);
+    h.setUint32(14, crc, true); h.setUint32(18, n, true); h.setUint32(22, n, true); h.setUint16(26, name.length, true);
+    parts.push(h, name, f.data);
+    const c = new DataView(new ArrayBuffer(46));
+    c.setUint32(0, 0x02014b50, true); c.setUint16(4, 20, true); c.setUint16(6, 20, true);
+    c.setUint32(16, crc, true); c.setUint32(20, n, true); c.setUint32(24, n, true); c.setUint16(28, name.length, true); c.setUint32(42, off, true);
+    dir.push(c, name);
+    off += 30 + name.length + n;
+  }
+  const e = new DataView(new ArrayBuffer(22));
+  e.setUint32(0, 0x06054b50, true); e.setUint16(8, files.length, true); e.setUint16(10, files.length, true);
+  e.setUint32(12, dir.reduce((a, p) => a + p.byteLength, 0), true); e.setUint32(16, off, true);
+  return new Blob([...parts, ...dir, e], {type: 'application/zip'});
+}
+
+// sources: [{name, node, gain?}]. Returns {stop() -> [{name, data: WAV bytes}]}
+async function startRecorder(sources) {
+  if (!recReady) {
+    await ctx.audioWorklet.addModule('data:text/javascript,' + encodeURIComponent(REC_WORKLET)); // data URL so it also loads from file://
+    recReady = true;
+  }
+  const node = new AudioWorkletNode(ctx, 'rec', {numberOfInputs: sources.length, numberOfOutputs: 0, channelCount: 2, channelCountMode: 'explicit'});
+  const taps = sources.map((s, i) => {
+    const g = ctx.createGain();
+    g.gain.value = s.gain ?? 1;
+    s.node.connect(g).connect(node, 0, i);
+    return g;
+  });
+  const data = sources.map(() => [[], []]);
+  node.port.onmessage = e => e.data.forEach((inp, i) => {
+    const silent = new Float32Array(128);
+    data[i][0].push(inp[0] ?? silent);
+    data[i][1].push(inp[1] ?? inp[0] ?? silent);
+  });
+  return {
+    stop() {
+      sources.forEach((s, i) => s.node.disconnect(taps[i]));
+      node.port.onmessage = null;
+      return sources.map((s, i) => ({name: s.name, data: wav(data[i][0], data[i][1], ctx.sampleRate)}));
+    },
+  };
 }
 
 const recTimer = () => {
-  const on = recNode || vidRec;
+  const on = wavRec || stemRec || vidRec;
   if (on && !recT0) recT0 = Date.now();
   if (!on) recT0 = 0;
   const sec = recT0 ? (Date.now() - recT0) / 1000 | 0 : 0;
@@ -788,22 +842,32 @@ setInterval(recTimer, 250);
 
 $('rec').onclick = async () => {
   await ensureAudio();
-  if (recNode) {
-    master.lvl.disconnect(recNode);
-    recNode.port.onmessage = null;
-    download(wav(recNode.L, recNode.R, ctx.sampleRate), 'wav');
-    recNode = null;
+  if (wavRec) {
+    download(new Blob([wavRec.stop()[0].data], {type: 'audio/wav'}), 'wav');
+    wavRec = null;
   } else {
-    if (!recReady) {
-      await ctx.audioWorklet.addModule('data:text/javascript,' + encodeURIComponent(REC_WORKLET)); // data URL so it also loads from file://
-      recReady = true;
-    }
-    recNode = new AudioWorkletNode(ctx, 'rec', {numberOfInputs: 1, numberOfOutputs: 0, channelCount: 2, channelCountMode: 'explicit'});
-    recNode.L = []; recNode.R = [];
-    recNode.port.onmessage = e => { recNode.L.push(e.data[0]); recNode.R.push(e.data[1]); };
-    master.lvl.connect(recNode);
+    wavRec = await startRecorder([{name: 'master', node: master.lvl}]);
   }
-  $('rec').classList.toggle('recording', !!recNode);
+  $('rec').classList.toggle('recording', !!wavRec);
+  recTimer();
+};
+
+// Stems are taken post-fader/inserts with the same -6dB master trim, so they sum back to the
+// mix (before master COMP and master fader). DELAY gets its own stem since it only feeds MASTER
+$('stems').onclick = async () => {
+  await ensureAudio();
+  if (stemRec) {
+    download(zip(stemRec.stop().map(f => ({name: f.name + '.wav', data: f.data}))), 'stems.zip');
+    stemRec = null;
+  } else {
+    const trim = master.inp.gain.value;
+    stemRec = await startRecorder([
+      {name: '00-master', node: master.lvl},
+      ...machines.map((m, i) => ({name: `${String(i + 1).padStart(2, '0')}-${m.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/-$/, '')}`, node: channels[i].out, gain: trim})),
+      {name: `${String(machines.length + 1).padStart(2, '0')}-delay-return`, node: delay.ret, gain: trim},
+    ]);
+  }
+  $('stems').classList.toggle('recording', !!stemRec);
   recTimer();
 };
 
