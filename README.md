@@ -4,6 +4,10 @@ An acid groovebox that runs in the browser: two TB-303-style bass lines, 808- an
 
 **▶ Play in your browser: https://verytired.github.io/afterbirth/**
 
+**🎬 Demo:** the ACID TRIP song preset, start to finish — [watch on YouTube](https://www.youtube.com/watch?v=M-HQHGlID6c)
+
+[![ACID TRIP demo](https://img.youtube.com/vi/M-HQHGlID6c/hqdefault.jpg)](https://www.youtube.com/watch?v=M-HQHGlID6c)
+
 ![screenshot](docs/screenshot.png)
 
 ## Getting started
