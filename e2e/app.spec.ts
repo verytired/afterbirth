@@ -264,6 +264,23 @@ test('panel title folds the panel, remembered across reloads; the machine keeps 
   await expect(page.locator('.d808 .drums')).toBeVisible();
 });
 
+test('dragging a panel title reorders the rows (display only), remembered across reloads', async ({ page }) => {
+  const titles = () => page.locator('.dev .panel > h2').allTextContents();
+  await page.setViewportSize({ width: 1400, height: 3000 }); // every row on screen: no scrolling mid-drag
+  const from = (await page.locator('.d606 > h2').boundingBox())!, to = (await page.locator('.d303 >> nth=0').boundingBox())!;
+  await page.mouse.move(from.x + 20, from.y + 10);
+  await page.mouse.down();
+  await page.mouse.move(to.x + 20, to.y + 5, { steps: 20 });
+  await page.mouse.move(to.x + 20, to.y + 2, { steps: 2 });
+  await page.mouse.up();
+  expect((await titles())[0]).toBe('AB-606');
+  await page.reload();
+  expect(await titles()).toEqual(['AB-606', 'AB-303 #1', 'AB-303 #2', 'AB-808', 'AB-909']);
+  expect(await page.evaluate(() => window.ab.machines.map(m => m.name))).toEqual(['AB-303 #1', 'AB-303 #2', 'AB-808', 'AB-909', 'AB-606']);
+  await page.locator('.d606 > h2').press('Alt+ArrowDown');
+  expect((await titles()).slice(0, 2)).toEqual(['AB-303 #1', 'AB-606']);
+});
+
 test('falls back to the JS engine when the WASM build cannot load', async ({ page }) => {
   await page.route('**/*.wasm', r => r.abort());
   await page.goto('./');

@@ -32,23 +32,47 @@ export function save() {
   try { localStorage.setItem(KEY, JSON.stringify(Object.fromEntries(machines.map(m => [m.name, m.pats])))); } catch { /* storage unavailable */ }
 }
 
-// Clicking a panel's title folds the machine's row (pattern and MIX columns too) to that line. Remembered per machine
-const FOLD = 'ab3389-fold';
-export function wireFold() {
-  let closed: string[] = [];
-  try { closed = JSON.parse(localStorage.getItem(FOLD) ?? '[]') || []; } catch { /* storage unavailable */ }
-  document.querySelectorAll<HTMLElement>('.panel > h2').forEach(h => {
-    const row = h.parentElement!.parentElement!, name = h.textContent!;
+// A panel's title folds the machine's row (pattern and MIX columns too) to that line on click, and moves the
+// row when dragged (or Alt+Up / Down). Display only: machines[] keeps its order (song slots, outputs).
+// Both remembered per machine
+const FOLD = 'ab3389-fold', ORDER = 'ab3389-order';
+const load = (k: string): string[] => { try { return JSON.parse(localStorage.getItem(k) ?? '[]') || []; } catch { return []; } };
+const store = (k: string, sel: string) => {
+  try { localStorage.setItem(k, JSON.stringify([...document.querySelectorAll(sel)].map(e => e.textContent!))); } catch { /* storage unavailable */ }
+};
+export function wireRows() {
+  const devs = $('devs'), closed = load(FOLD), order = load(ORDER), titles = '.dev .panel > h2';
+  const rank = (r: Element) => { const i = order.indexOf(r.querySelector('.panel > h2')!.textContent!); return i < 0 ? order.length : i; };
+  [...devs.children].sort((x, y) => rank(x) - rank(y)).forEach(r => devs.append(r));
+  let dragging: HTMLElement | null = null;
+  document.querySelectorAll<HTMLElement>(titles).forEach(h => {
+    const row = h.parentElement!.parentElement!;
     const set = (shut: boolean) => { row.classList.toggle('closed', shut); h.setAttribute('aria-expanded', String(!shut)); };
     h.tabIndex = 0; h.setAttribute('role', 'button');
-    set(closed.includes(name));
-    h.onclick = () => {
-      set(!row.classList.contains('closed'));
-      closed = [...document.querySelectorAll('.dev.closed .panel > h2')].map(e => e.textContent!);
-      try { localStorage.setItem(FOLD, JSON.stringify(closed)); } catch { /* storage unavailable */ }
+    set(closed.includes(h.textContent!));
+    h.onclick = () => { set(!row.classList.contains('closed')); store(FOLD, '.dev.closed .panel > h2'); };
+    h.onkeydown = e => {
+      if (e.altKey && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
+        e.preventDefault();
+        const to = e.key === 'ArrowUp' ? row.previousElementSibling : row.nextElementSibling?.nextElementSibling ?? null;
+        if (e.key === 'ArrowDown' && !row.nextElementSibling) return;
+        devs.insertBefore(row, to); h.focus(); store(ORDER, titles);
+      } else if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); h.click(); }
     };
-    h.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); h.click(); } };
+    // Only the title starts a drag, so knobs and faders keep working
+    h.onpointerdown = () => { row.draggable = true; };
+    h.onpointerup = () => { row.draggable = false; };
+    row.ondragstart = e => { dragging = row; row.classList.add('dragging'); e.dataTransfer?.setData('text/plain', ''); };
+    row.ondragend = () => { dragging = null; row.draggable = false; row.classList.remove('dragging'); store(ORDER, titles); };
   });
+  devs.ondragover = e => {
+    if (!dragging) return;
+    e.preventDefault();
+    const over = (e.target as Element).closest<HTMLElement>('.dev');
+    if (!over || over === dragging) return;
+    const r = over.getBoundingClientRect();
+    devs.insertBefore(dragging, e.clientY < r.top + r.height / 2 ? over : over.nextSibling);
+  };
 }
 
 // One machine row: pattern column / panel / MIX column

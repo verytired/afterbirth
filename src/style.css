@@ -49,7 +49,8 @@ h2{margin:0 0 10px;font-size:18px;font-style:italic;font-weight:900;letter-spaci
 @keyframes blink{50%{background:#555;color:#ddd}}
 
 /* Machine panels */
-.panel>h2{cursor:pointer;user-select:none}
+.panel>h2{cursor:grab;user-select:none}
+.dev.dragging{opacity:.5}
 .panel>h2::after{content:' \25BE';font-size:12px;font-style:normal;opacity:.6}
 .dev.closed{grid-template-columns:1fr !important}
 .dev.closed>.bankbox,.dev.closed>.mix,.dev.closed .panel>:not(h2){display:none}
