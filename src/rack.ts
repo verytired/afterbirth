@@ -7,6 +7,8 @@ export interface Pat { shuf: boolean }
 export interface Machine {
   name: string;
   pats: Pat[];
+  bank: Bank<Pat>;
+  parts?: string[]; // drum voice names, in grid row order
   init(): void | Promise<void>;
   play(i: number, t: number, d: number, shuffle: number): void;
   stop(): void;
@@ -37,7 +39,7 @@ export function mountDevice(cls: string): [HTMLElement, HTMLElement, HTMLElement
   return [...row.children] as [HTMLElement, HTMLElement, HTMLElement];
 }
 
-export interface Bank<P> { sel: number; queued: number | null; readonly pat: P; tick(i: number): void }
+export interface Bank<P> { sel: number; queued: number | null; readonly pat: P; tick(i: number): void; set(idx: number): void }
 
 // 32 patterns A1-D8. While playing, a switch takes effect at the next bar
 export function makeBank<P extends Pat>(el: HTMLElement, pats: P[], onChange: () => void): Bank<P> {
@@ -54,6 +56,7 @@ export function makeBank<P extends Pat>(el: HTMLElement, pats: P[], onChange: ()
       bank.sel = bank.queued; bank.queued = null;
       onChange(); show();
     },
+    set: idx => go(idx),
   };
   const show = () => {
     const x = bank.queued ?? bank.sel;

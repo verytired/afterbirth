@@ -31,6 +31,15 @@
         <button class="tog" id="mcomp">COMP</button>
       </div>
     </div>
+    <div class="box fx song">
+      <div class="hdr"><button class="led-btn" id="songon" aria-label="SONG on"></button>SONG <span class="led" id="songpos">-</span></div>
+      <textarea id="songtext" rows="6" spellcheck="false" aria-label="song" placeholder="One row per line: 303#1 303#2 808 909 xBARS&#10;D1 D8 - D2 x16   (- keeps the pattern)"></textarea>
+      <div class="row">
+        <button class="tog" id="autorec" title="Record knob moves into the song while it plays">● AUTO</button>
+        <button class="tog" id="autoclr" title="Erase all knob automation">CLR AUTO</button>
+        <button class="tog" id="preset" title="Load a Hardfloor-style acid track into bank D">ACID TRIP</button>
+      </div>
+    </div>
     <div class="box fx">
       <div class="hdr"><button class="led-btn on" data-unit="PCF" aria-label="PCF on"></button>PCF</div>
       <div class="row" style="align-items:center">
