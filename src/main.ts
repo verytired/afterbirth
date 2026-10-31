@@ -11,8 +11,6 @@ import { wireRecording } from './record';
 import { wireOutput } from './output';
 import { song, wireSong } from './song';
 import { wirePreset } from './preset';
-import { wireDemo } from './demo';
-import { wireTour } from './tour';
 
 machines.push(
   make303('AB-303 #1', [[0, 0, 1, 0], [0, 1, 0, 0], [-1], [12, 0, 0, 1], [3, 0, 0, 1], [0, 0, 1, 0], [7, -1, 0, 0], [-1],
@@ -32,8 +30,6 @@ wireRecording();
 wireOutput();
 wireSong(); // after knobify
 wirePreset();
-wireDemo();
-wireTour();
 document.addEventListener('click', save);
 document.addEventListener('change', save);
 

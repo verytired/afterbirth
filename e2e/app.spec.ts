@@ -212,37 +212,6 @@ test('Dynamic Bank Switching reads steps from the flipped bank while held or tri
   expect(triggered).toBeGreaterThan(normal * 0.3);
 });
 
-test('DEMO scenes set up the MODS and STOCK restores the startup controls', async ({ page }) => {
-  const d1 = '#devs .dev:nth-child(1)', d2 = '#devs .dev:nth-child(2)';
-  await play(page);
-  await page.selectOption('#demo', 'dbs');
-  await expect(page.locator(`${d1} [name=dbsA]`)).toHaveValue('2:BD');
-  expect(await page.evaluate(() => window.ab.machines[0].pats[1])).toMatchObject({ steps: expect.arrayContaining([expect.objectContaining({ note: 12 })]) });
-
-  await page.selectOption('#demo', 'selfosc');
-  await expect(page.locator(`${d1} [name=dbsA]`)).toHaveValue(''); // previous scene undone
-  await expect(page.locator(`${d2} [name=selfosc]`)).toHaveValue('1');
-  expect(await channelPeak(page, 1, 1500)).toBeGreaterThan(0.05);
-
-  await page.selectOption('#demo', 'devil');
-  await expect(page.locator(`${d1} [name=muffler]`)).toHaveValue('1');
-  expect(await channelPeak(page, 0, 1500)).toBeGreaterThan(0.05);
-
-  await page.selectOption('#demo', 'stock');
-  for (const [sel, v] of [[`${d1} [name=drive]`, '0'], [`${d1} [name=muffler]`, '0'], [`${d2} [name=selfosc]`, '0'], [`${d2} [name=reso]`, '8']])
-    await expect(page.locator(sel)).toHaveValue(v);
-});
-
-test('MODS TOUR loads into bank C and starts playing with a caption', async ({ page }) => {
-  await page.click('#tour'); // bank C is empty in a fresh profile, so no confirm
-  await expect(page.locator('#play')).toHaveClass(/on/);
-  await expect(page.locator('#songcap')).toHaveText('AB-303 STOCK');
-  await expect(page.locator('#devs .dev:nth-child(2) [name=selfosc]')).toHaveValue('1');
-  await expect(page.locator('#devs .dev:nth-child(1) [name=dbsA]')).toHaveValue('2:BD');
-  expect(await page.evaluate(() => window.ab.tempo.value)).toBe(130);
-  expect(await masterPeak(page, 1500)).toBeGreaterThan(0.2);
-});
-
 test('303 runs on the WASM engine and can switch engines while playing', async ({ page }) => {
   await play(page);
   await expect(page.locator(engine303)).toHaveValue('wasm');

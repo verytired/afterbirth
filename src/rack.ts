@@ -11,7 +11,6 @@ export interface Machine {
   parts?: string[]; // drum voice names, in grid row order
   hit?(part: string, i: number): boolean; // does this drum part play on step i of the current pattern
   rackReady?(): void; // called once every machine exists
-  setSteps?(slot: number, steps: number[][]): void; // 303 only: replace a pattern, same tuples as make303
   init(): void | Promise<void>;
   play(i: number, t: number, d: number, shuffle: number): void;
   stop(): void;
