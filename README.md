@@ -1,6 +1,6 @@
 # AfterBirth AB-3389
 
-An acid groovebox that runs in the browser: two TB-303-style bass lines, 808- and 909-style drum machines, a mixer and effects, all built on the Web Audio API alone. No external libraries, a single `index.html`.
+An acid groovebox that runs in the browser: two TB-303-style bass lines, 808- and 909-style drum machines, a mixer and effects, all built on the Web Audio API alone. TypeScript + Vite, no runtime dependencies.
 
 **▶ Play in your browser: https://verytired.github.io/afterbirth/**
 
@@ -9,7 +9,8 @@ An acid groovebox that runs in the browser: two TB-303-style bass lines, 808- an
 ## Getting started
 
 ```sh
-open index.html   # or drag it into a browser
+npm install
+npm run dev     # http://localhost:5173
 ```
 
 Press ▶ to start (browsers keep audio suspended until the first click). Chrome / Edge recommended.
@@ -70,6 +71,29 @@ From **REC** in the top bar.
 - **● STEMS**: records MASTER, each machine and the delay return at the same time, sample-aligned, and downloads them as a zip (`00-master.wav`, `01-ab-303-1.wav`, … `05-delay-return.wav`). Machine stems are post-fader/inserts with the same -6dB master trim, so the stems sum back to the mix before master COMP / master fader
 - **● VIDEO**: pick the AB tab in the screen-share dialog to record the screen together with MASTER audio. Press again, or stop sharing, to finish. mp4 in Chrome, webm elsewhere
 - Recordings are buffered in memory, so long takes are not a good fit (about 200MB per 10 minutes per stereo track; STEMS records six)
+
+## Development
+
+| Command | What it does |
+|---|---|
+| `npm run dev` | Dev server with hot reload |
+| `npm run typecheck` | TypeScript type check |
+| `npm test` | Unit tests (Vitest) for the pure helpers in `src/lib.ts` |
+| `npm run e2e` | Builds, then drives the production build in Chrome with Playwright: playback level, pattern banks, MIDI clock, WAV and stem export (stems must sum back to MASTER) |
+| `npm run check` | All of the above |
+
+Code lives in `src/`: `tb303.ts` and `drums.ts` (machines), `audio.ts` (effects, master, mixer), `transport.ts`, `midi.ts`, `record.ts`, `output.ts`, wired together in `main.ts`.
+
+### CI and releases
+
+GitHub Actions runs the type check, unit tests and Playwright tests on every push and pull request. GitHub Pages is deployed from `main` only after they pass.
+
+Releases are created by CI too. Do not create them by hand; push an annotated tag and the release (with the tag message as notes) appears once the checks pass:
+
+```sh
+git tag -a v0.4 -m "Release notes here"
+git push origin v0.4
+```
 
 ## License
 
