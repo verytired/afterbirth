@@ -1,6 +1,9 @@
 import { ctx } from './state';
 import { Channel } from './audio';
 import { loadPats, makeBank, mountDevice, type Machine, type Pat } from './rack';
+import { loadVoice } from './dsp/load';
+import { P_ACCENT, P_CUTOFF, P_DECAY, P_ENV, P_RESO, P_WAVE } from './dsp/engine';
+import type { EngineName, ProcessorMsg, VoiceMsg } from './dsp/protocol';
 
 const NOTES = ['—', 'C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B', 'C+'];
 const KNOBS = [
@@ -8,6 +11,9 @@ const KNOBS = [
   ['ENV MOD', 'env', 0, 1, .01, .5], ['DECAY', 'decay', .05, 1.5, .01, .4], ['ACCENT', 'accent', 0, 1, .01, .6],
 ] as const;
 type KnobName = typeof KNOBS[number][1];
+const PARAM_IDS: Partial<Record<KnobName, number>> = { cutoff: P_CUTOFF, reso: P_RESO, env: P_ENV, decay: P_DECAY, accent: P_ACCENT };
+// wasm/js = the 303 voice in an AudioWorklet (same DSP, two builds); classic = the original BiquadFilter graph
+type EngineChoice = EngineName | 'classic';
 
 interface Step { note: number; oct: number; acc: boolean; sld: boolean } // note: -1 = rest, 0..12 = C..C+
 interface Pat303 extends Pat { steps: Step[] }
@@ -24,6 +30,7 @@ export function make303(name: string, pattern: number[][], opt: Opt303 = {}): Ma
   let steps = pats[0].steps;
   root.innerHTML = `<h2>${name}</h2><div class="row">
     <button data-a="rand">RANDOM</button><button data-a="clear">CLEAR</button>
+    <label>ENGINE <select name="engine"><option value="wasm">WASM</option><option value="js">JS</option><option value="classic">CLASSIC</option></select></label>
     <label>WAVE <select name="wave"><option value="sawtooth">SAW</option><option value="square">SQUARE</option></select></label>
     ${KNOBS.map(([l, n, mn, mx, st, def]) => `<label>${l} <input type="range" name="${n}" min="${mn}" max="${mx}" step="${st}" value="${opt[n] ?? def}"></label>`).join('')}
     </div><div class="seq"></div>`;
@@ -31,6 +38,8 @@ export function make303(name: string, pattern: number[][], opt: Opt303 = {}): Ma
   const v = (n: KnobName) => +q<HTMLInputElement>(`[name=${n}]`).value;
   const wave = q<HTMLSelectElement>('[name=wave]');
   if (opt.wave) wave.value = opt.wave;
+  const engineSel = q<HTMLSelectElement>('[name=engine]');
+  const engine = () => engineSel.value as EngineChoice;
 
   const stepEls = steps.map((_, i) => {
     const el = document.createElement('div');
@@ -74,13 +83,19 @@ export function make303(name: string, pattern: number[][], opt: Opt303 = {}): Ma
   };
   q<HTMLButtonElement>('[data-a=clear]').onclick = () => { steps.forEach(s => Object.assign(s, rest())); renderAll(); };
 
-  let osc: OscillatorNode, f1: BiquadFilterNode, f2: BiquadFilterNode, vca: GainNode;
+  let osc: OscillatorNode, f1: BiquadFilterNode, f2: BiquadFilterNode, vca: GainNode, voice: AudioWorkletNode;
+  const send = (m: VoiceMsg) => voice?.port.postMessage(m);
+  const sendParams = () => {
+    for (const [n, id] of Object.entries(PARAM_IDS)) send({ k: 'p', id, v: v(n as KnobName) });
+    send({ k: 'p', id: P_WAVE, v: wave.value === 'square' ? 1 : 0 });
+  };
   const cutoffHz = () => 60 * Math.pow(100, v('cutoff')); // 60Hz..6kHz
 
   return {
     name, pats,
-    init() {
+    async init() {
       ch.init();
+      // classic graph
       osc = ctx.createOscillator();
       f1 = ctx.createBiquadFilter(); f1.type = 'lowpass';
       f2 = ctx.createBiquadFilter(); f2.type = 'lowpass'; f2.Q.value = 0; // two stages for a steeper, ~24dB/oct slope
@@ -92,6 +107,31 @@ export function make303(name: string, pattern: number[][], opt: Opt303 = {}): Ma
       wave.addEventListener('input', upd);
       q('[name=reso]').addEventListener('input', upd);
       upd();
+
+      // worklet voice. Falls back to the JS engine when the WASM build cannot be loaded
+      const wasm = await loadVoice(ctx);
+      if (!wasm) {
+        const o = engineSel.querySelector<HTMLOptionElement>('option[value=wasm]')!;
+        o.disabled = true; o.textContent = 'WASM (unavailable)';
+        if (engine() === 'wasm') engineSel.value = 'js';
+      }
+      voice = new AudioWorkletNode(ctx, 'voice303', {
+        numberOfInputs: 0, numberOfOutputs: 1, outputChannelCount: [1],
+        processorOptions: { wasm, engine: engine() === 'js' ? 'js' : 'wasm' },
+      });
+      voice.port.onmessage = (e: MessageEvent<ProcessorMsg>) => {
+        if (e.data.k === 'engine' && engine() !== 'classic') engineSel.value = e.data.name;
+        if (e.data.k === 'error') console.warn('303 voice:', e.data.msg);
+      };
+      voice.connect(ch.inp);
+      sendParams();
+      root.querySelectorAll('input[type=range], [name=wave]').forEach(el => el.addEventListener('input', sendParams));
+      engineSel.addEventListener('input', () => {
+        send({ k: 'flush' });
+        vca.gain.cancelScheduledValues(ctx.currentTime);
+        vca.gain.setTargetAtTime(0, ctx.currentTime, 0.01);
+        if (engine() !== 'classic') send({ k: 'engine', name: engine() as EngineName });
+      });
     },
     play(i, t, d, sh) {
       bank.tick(i);
@@ -101,6 +141,11 @@ export function make303(name: string, pattern: number[][], opt: Opt303 = {}): Ma
       const freq = 440 * 2 ** ((36 + s.note + 12 * s.oct + v('tune') - 69) / 12);
       const slidIn = prev.note >= 0 && prev.sld;
       const tieOut = s.sld && next.note >= 0;
+      if (engine() !== 'classic') {
+        send({ k: 'on', t, f: freq, acc: s.acc ? 1 : 0, slide: slidIn ? 1 : 0 });
+        if (!tieOut) send({ k: 'off', t: t + d * 0.55 });
+        return;
+      }
       if (slidIn) {
         osc.frequency.setTargetAtTime(freq, t, 0.03);
       } else {
@@ -121,6 +166,7 @@ export function make303(name: string, pattern: number[][], opt: Opt303 = {}): Ma
     },
     stop() {
       bank.tick(0);
+      send({ k: 'flush' });
       vca.gain.cancelScheduledValues(ctx.currentTime);
       vca.gain.setTargetAtTime(0, ctx.currentTime, 0.01);
     },

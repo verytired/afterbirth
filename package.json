@@ -4,17 +4,19 @@
   "version": "0.3.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
+    "dev": "npm run asbuild && vite",
+    "build": "npm run asbuild && vite build",
     "preview": "vite preview",
-    "typecheck": "tsc --noEmit",
-    "test": "vitest run",
+    "typecheck": "tsc --noEmit && asc assembly/index.ts --noEmit",
+    "test": "npm run asbuild && vitest run",
     "e2e": "playwright test",
-    "check": "npm run typecheck && npm test && npm run build && npm run e2e"
+    "check": "npm run typecheck && npm test && npm run build && npm run e2e",
+    "asbuild": "asc assembly/index.ts -o src/dsp/voice.wasm --runtime stub -O3 --initialMemory 1 --maximumMemory 1"
   },
   "devDependencies": {
     "@playwright/test": "^1.64.1",
     "@types/node": "^26.6.6",
+    "assemblyscript": "^0.28.20",
     "typescript": "^7.0.2",
     "vite": "^8.3.5",
     "vitest": "^5.0.5"

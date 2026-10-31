@@ -9,13 +9,14 @@ export let cur = 0;
 export const setCur = (i: number) => { cur = i; };
 let nextT = 0, timer: ReturnType<typeof setInterval> | undefined;
 
+let audioReady: Promise<void> | undefined;
 export async function ensureAudio() {
-  if (!ctx) {
+  await (audioReady ??= (async () => {
     initCtx();
     master.init(); delay.init();
-    machines.forEach(m => m.init());
+    await Promise.all(machines.map(m => m.init()));
     refresh();
-  }
+  })());
   await ctx.resume();
 }
 
