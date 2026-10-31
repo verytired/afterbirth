@@ -87,7 +87,8 @@ const METALS: Metal[] = [
   // HH is mostly noise: a recorded hi-hat is a 'shh' with a metallic tint, not a chord (audibly so on OH)
   { dur: 0.9, n: 200, lo: 2500, hi: 8800, ring: 0.3, bell: [3350, 4100, 4750], bellAmp: 1, noise: 1.6, hp: 2500 }, // HH
   { dur: 2, n: 90, lo: 450, hi: 8800, ring: 0.9, noise: 0.6, crash: 1.2, hp: 1800 },                         // CR
-  { dur: 1.8, n: 60, lo: 2000, hi: 8800, ring: 0.6, bell: [3150, 3600, 4200, 4900], noise: 0.15, hp: 1500 }, // RD
+  // RD keeps an audible ping (more tonal than the hats) over a wash
+  { dur: 1.8, n: 150, lo: 2000, hi: 8800, ring: 0.6, bell: [3150, 3600, 4200, 4900], bellAmp: 1.5, noise: 0.6, hp: 1500 }, // RD
 ];
 const hipass = (f: number, fs: number) => { // RBJ highpass, Q 1/sqrt2
   const w = 2 * Math.PI * f / fs, al = Math.sin(w) / Math.SQRT2, c = Math.cos(w), a0 = 1 + al;
