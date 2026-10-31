@@ -72,3 +72,49 @@ export const withNum = (x: number, num: number) => (x & ~7) + num;
 // "AB-303 #1" -> "01-ab-303-1"
 export const stemName = (i: number, name: string) =>
   `${String(i).padStart(2, '0')}-${name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/-$/, '')}`;
+
+// Song text: one row per line, one slot per machine (A1-D8, "-" keeps the current pattern), then "xN" for N bars (default 1).
+// "#" starts a comment, a line "END" stops the song there instead of looping. e.g. "D1 - D8 D2 x16"
+export interface SongRow { slots: number[]; bars: number }
+export function parseSong(text: string): SongRow[] {
+  return text.split('\n').map(l => l.replace(/#.*/, '').trim()).filter(l => l && !/^end$/i.test(l)).map(l => {
+    const row: SongRow = { slots: [], bars: 1 };
+    for (const tok of l.split(/\s+/)) {
+      const x = /^x(\d+)$/i.exec(tok), b = BANKS.indexOf(tok[0].toUpperCase()), n = +tok.slice(1);
+      if (x) row.bars = Math.max(1, +x[1]);
+      else row.slots.push(tok.length === 2 && b >= 0 && n >= 1 && n <= 8 ? b * 8 + n - 1 : -1);
+    }
+    return row;
+  });
+}
+export const songEnds = (text: string) => /^\s*end\s*(#.*)?$/im.test(text);
+export const songBars = (rows: SongRow[]) => rows.reduce((a, r) => a + r.bars, 0);
+// Slots for bar (the song loops), or null for an empty song
+export function songRowAt(rows: SongRow[], bar: number): number[] | null {
+  const total = songBars(rows);
+  if (!total) return null;
+  let b = bar % total;
+  for (const r of rows) { if (b < r.bars) return r.slots; b -= r.bars; }
+  return null;
+}
+
+// 303 steps as text: C..B, C+ (high C) or "-" (rest), with suffixes ^ up, v down, ! accent, ~ slide. e.g. "C! C^~ - D#v"
+const NOTE_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B', 'C+'];
+export function parse303(s: string) {
+  return s.trim().split(/\s+/).map(t => {
+    const m = /^(-|[A-G]#?\+?)([\^v!~]*)$/.exec(t), note = m ? (m[1] === '-' ? -1 : NOTE_NAMES.indexOf(m[1])) : -2;
+    if (!m || note < -1) throw new Error(`bad 303 step "${t}"`);
+    const f = m[2];
+    return { note, oct: f.includes('^') ? 1 : f.includes('v') ? -1 : 0, acc: f.includes('!'), sld: f.includes('~') };
+  });
+}
+
+// Piecewise-linear value at x over sorted [x, value] keyframes
+export function lerpKeys(keys: [number, number][], x: number): number {
+  if (x <= keys[0][0]) return keys[0][1];
+  for (let i = 1; i < keys.length; i++) {
+    const [x0, v0] = keys[i - 1], [x1, v1] = keys[i];
+    if (x <= x1) return v0 + (v1 - v0) * (x - x0) / (x1 - x0);
+  }
+  return keys[keys.length - 1][1];
+}

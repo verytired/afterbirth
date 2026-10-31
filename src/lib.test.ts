@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { wav, crc32, zip, PCF_PATS, shuffleOffset, slotBank, slotNum, withBank, withNum, stemName } from './lib';
+import { wav, crc32, zip, PCF_PATS, shuffleOffset, slotBank, slotNum, withBank, withNum, stemName, parseSong, songBars, songRowAt, songEnds, parse303, lerpKeys } from './lib';
 
 describe('wav', () => {
   it('writes a 16-bit stereo header and interleaved, clamped samples', () => {
@@ -85,5 +85,28 @@ describe('stemName', () => {
   it('slugs machine names', () => {
     expect(stemName(1, 'AB-303 #1')).toBe('01-ab-303-1');
     expect(stemName(3, 'AB-808')).toBe('03-ab-808');
+  });
+});
+
+describe('song', () => {
+  it('parses rows, keeps, bars and comments, and loops', () => {
+    const rows = parseSong('# header\nA1 D8 - b2 x4  # intro\n\nC3 x2\nEND\n');
+    expect(rows).toEqual([{ slots: [0, 31, -1, 9], bars: 4 }, { slots: [18], bars: 2 }]);
+    expect(songBars(rows)).toBe(6);
+    expect(songRowAt(rows, 3)).toEqual(rows[0].slots);
+    expect(songRowAt(rows, 4)).toEqual([18]);
+    expect(songRowAt(rows, 6)).toEqual(rows[0].slots);
+    expect(songRowAt([], 0)).toBeNull();
+    expect([songEnds('A1 x2\n end # stop'), songEnds('A1 x2')]).toEqual([true, false]);
+  });
+  it('parses 303 steps', () => {
+    expect(parse303('C! C+^~ - D#v')).toEqual([
+      { note: 0, oct: 0, acc: true, sld: false }, { note: 12, oct: 1, acc: false, sld: true },
+      { note: -1, oct: 0, acc: false, sld: false }, { note: 3, oct: -1, acc: false, sld: false }]);
+    expect(() => parse303('H')).toThrow();
+  });
+  it('interpolates keyframes', () => {
+    const k: [number, number][] = [[0, 0], [10, 1], [20, 0]];
+    expect([lerpKeys(k, -1), lerpKeys(k, 5), lerpKeys(k, 15), lerpKeys(k, 99)]).toEqual([0, 0.5, 0.5, 0]);
   });
 });

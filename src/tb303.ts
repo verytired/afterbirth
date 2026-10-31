@@ -99,7 +99,7 @@ export function make303(name: string, pattern: number[][], opt: Opt303 = {}): Ma
   const cutoffHz = () => 60 * Math.pow(100, v('cutoff')); // 60Hz..6kHz
 
   return {
-    name, pats,
+    name, pats, bank,
     async init() {
       ch.init();
       // classic graph
