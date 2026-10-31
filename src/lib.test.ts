@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import { readdirSync, readFileSync } from 'node:fs';
 import { wav, crc32, zip, PCF_PATS, shuffleOffset, slotBank, slotNum, withBank, withNum, stemName, parseSong, songBars, songRowAt, songEnds, songCaptions, songRowIndexAt, checkSongFile, SONG_FORMAT, parse303, lerpKeys } from './lib';
 
 describe('wav', () => {
@@ -127,4 +128,17 @@ describe('checkSongFile', () => {
     expect(() => checkSongFile({ ...ok, tempo: '130' })).toThrow('broken song file');
     expect(() => checkSongFile({ ...ok, patterns: undefined })).toThrow('broken song file');
   });
+});
+
+describe('bundled songs (public/songs)', () => {
+  const dir = new URL('../public/songs/', import.meta.url);
+  for (const name of readdirSync(dir).filter(n => n.endsWith('.song.json'))) {
+    it(`${name} is a valid song file`, () => {
+      const f = checkSongFile(JSON.parse(readFileSync(new URL(name, dir), 'utf8')));
+      expect(Object.keys(f.patterns)).toEqual(['AB-303 #1', 'AB-303 #2', 'AB-808', 'AB-909']);
+      for (const p of Object.values(f.patterns)) expect(p).toHaveLength(32);
+      expect(songBars(parseSong(f.song.text))).toBeGreaterThan(0);
+      expect(songEnds(f.song.text)).toBe(true);
+    });
+  }
 });
