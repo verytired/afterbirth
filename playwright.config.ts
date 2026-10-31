@@ -1,5 +1,6 @@
 import { defineConfig } from '@playwright/test';
 
+// Tests run against the production build (what gets deployed).
 // Locally use the installed Chrome; CI installs Playwright's Chromium
 export default defineConfig({
   testDir: 'e2e',
@@ -10,7 +11,7 @@ export default defineConfig({
     launchOptions: { args: ['--autoplay-policy=no-user-gesture-required'] },
   },
   webServer: {
-    command: 'npx vite --port 4173 --strictPort',
+    command: 'npx vite build && npx vite preview --port 4173 --strictPort',
     url: 'http://localhost:4173/',
     reuseExistingServer: !process.env.CI,
   },

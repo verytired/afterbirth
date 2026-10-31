@@ -1,8 +1,6 @@
 import { test, expect, type Page } from '@playwright/test';
 import { readFileSync } from 'node:fs';
 
-declare global { interface Window { ab: any } }
-
 // Fail any test that throws in the page
 let errors: string[] = [];
 test.beforeEach(async ({ page }) => {
@@ -17,7 +15,7 @@ const play = async (page: Page) => { await page.click('#play'); await page.waitF
 
 // Peak of MASTER post-fader over ms
 const masterPeak = (page: Page, ms: number) => page.evaluate(async ms => {
-  const an: AnalyserNode = window.ab.master.an, buf = new Float32Array(an.fftSize);
+  const an = window.ab.master.an, buf = new Float32Array(an.fftSize);
   let pk = 0;
   const t0 = performance.now();
   while (performance.now() - t0 < ms) {
