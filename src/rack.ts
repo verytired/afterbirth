@@ -7,7 +7,7 @@ export interface Pat { shuf: boolean }
 export interface Machine {
   name: string;
   pats: Pat[];
-  init(): void;
+  init(): void | Promise<void>;
   play(i: number, t: number, d: number, shuffle: number): void;
   stop(): void;
   highlight(i: number): void;

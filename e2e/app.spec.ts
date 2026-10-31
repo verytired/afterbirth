@@ -28,6 +28,21 @@ const masterPeak = (page: Page, ms: number) => page.evaluate(async ms => {
 
 const peak = (s: Int16Array) => s.reduce((m, x) => Math.max(m, Math.abs(x)), 0);
 
+// Peak of one mixer channel (post-fader) over ms
+const channelPeak = (page: Page, ch: number, ms: number) => page.evaluate(async ([ch, ms]) => {
+  const ab = window.ab, an = ab.ctx.createAnalyser(), buf = new Float32Array(an.fftSize);
+  ab.channels[ch].out.connect(an);
+  let pk = 0;
+  const t0 = performance.now();
+  while (performance.now() - t0 < ms) {
+    an.getFloatTimeDomainData(buf);
+    for (const x of buf) pk = Math.max(pk, Math.abs(x));
+    await new Promise(r => setTimeout(r, 10));
+  }
+  ab.channels[ch].out.disconnect(an);
+  return pk;
+}, [ch, ms]);
+
 function parseWav(b: Buffer) {
   expect(b.toString('ascii', 0, 4)).toBe('RIFF');
   expect(b.toString('ascii', 8, 16)).toBe('WAVEfmt ');
@@ -130,4 +145,27 @@ test('exports aligned stems that sum back to MASTER', async ({ page }) => {
   for (let i = 0; i < n; i += 3) err = Math.max(err, Math.abs(w['00-master.wav'].s[i] - 0.8 * parts.reduce((a, p) => a + p[i], 0)));
   expect(err).toBeLessThan(4);
   expect(peak(w['01-ab-303-1.wav'].s)).toBeGreaterThan(1000);
+});
+
+const engine303 = '#devs .dev:nth-child(1) [name=engine]';
+
+test('303 runs on the WASM engine and can switch engines while playing', async ({ page }) => {
+  await play(page);
+  await expect(page.locator(engine303)).toHaveValue('wasm');
+  expect(await channelPeak(page, 0, 1500)).toBeGreaterThan(0.05);
+  for (const e of ['js', 'classic', 'wasm']) {
+    await page.selectOption(engine303, e);
+    await expect(page.locator(engine303)).toHaveValue(e);
+    expect(await channelPeak(page, 0, 1500)).toBeGreaterThan(0.05);
+  }
+});
+
+test('falls back to the JS engine when the WASM build cannot load', async ({ page }) => {
+  await page.route('**/*.wasm', r => r.abort());
+  await page.goto('./');
+  await play(page);
+  await expect(page.locator(engine303)).toHaveValue('js');
+  await expect(page.locator(`${engine303} option[value=wasm]`)).toHaveJSProperty('disabled', true); // toBeDisabled() reports <option disabled> as enabled
+  expect(await channelPeak(page, 0, 1500)).toBeGreaterThan(0.05);
+  errors = errors.filter(e => !e.includes('ERR_FAILED')); // the aborted .wasm request itself
 });

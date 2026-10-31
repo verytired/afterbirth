@@ -19,7 +19,7 @@ Press ▶ to start (browsers keep audio suspended until the first click). Chrome
 
 | Unit | What it does |
 |---|---|
-| **AB-303 #1 / #2** | SAW / SQUARE, TUNE / CUTOFF / RESO / ENV MOD / DECAY / ACCENT. 16 steps with note, UP / DN, ACC (accent) and SLD (slide) |
+| **AB-303 #1 / #2** | ENGINE (WASM / JS / CLASSIC), SAW / SQUARE, TUNE / CUTOFF / RESO / ENV MOD / DECAY / ACCENT. 16 steps with note, UP / DN, ACC (accent) and SLD (slide) |
 | **AB-808** | BD / SD / CH / OH / CP. Fully synthesized; CH chokes OH |
 | **AB-909** | BD / SD / LT / HT / RS / CP / CH / OH / CR |
 | **PATTERN** | 32 patterns per machine (1-8 × A-D). Switching while playing waits for the next bar. SHUFFLE on/off per pattern |
@@ -33,6 +33,20 @@ Press ▶ to start (browsers keep audio suspended until the first click). Chrome
 - Drag knobs up/down to turn them, double-click to reset. Arrow keys work when a knob has focus
 - LED displays such as TEMPO change with −/+, the mouse wheel, or a vertical drag
 - Patterns autosave to localStorage (knob and mixer values are not saved)
+
+## 303 voice engine
+
+Each AB-303 voice runs in an AudioWorklet: a PolyBLEP oscillator into a nonlinear 4-pole ladder filter (zero-delay feedback, saturated input, 2× oversampled), with the filter/amp envelopes, slide and an accent sweep that opens the filter further on consecutive accents.
+
+The same DSP exists twice, selectable per machine with **ENGINE**:
+
+| ENGINE | What runs |
+|---|---|
+| **WASM** (default) | `assembly/index.ts`, compiled to WebAssembly with AssemblyScript |
+| **JS** | `src/dsp/engine.ts`. Used automatically if the WASM build cannot load |
+| **CLASSIC** | The original Web Audio graph (OscillatorNode + two BiquadFilters), kept for comparison |
+
+WASM and JS are kept in sync by a unit test that renders both from the same note/knob events and requires them to match.
 
 ## Using it with Ableton Live
 
@@ -78,11 +92,11 @@ From **REC** in the top bar.
 |---|---|
 | `npm run dev` | Dev server with hot reload |
 | `npm run typecheck` | TypeScript type check |
-| `npm test` | Unit tests (Vitest) for the pure helpers in `src/lib.ts` |
-| `npm run e2e` | Builds, then drives the production build in Chrome with Playwright: playback level, pattern banks, MIDI clock, WAV and stem export (stems must sum back to MASTER) |
+| `npm test` | Unit tests (Vitest): helpers in `src/lib.ts`, and the 303 engine (determinism, stability at max settings, WASM output matching JS) |
+| `npm run e2e` | Builds, then drives the production build in Chrome with Playwright: playback level, pattern banks, MIDI clock, WAV and stem export (stems must sum back to MASTER), engine switching, fallback to JS when the WASM file is blocked |
 | `npm run check` | All of the above |
 
-Code lives in `src/`: `tb303.ts` and `drums.ts` (machines), `audio.ts` (effects, master, mixer), `transport.ts`, `midi.ts`, `record.ts`, `output.ts`, wired together in `main.ts`.
+Code lives in `src/`: `tb303.ts` and `drums.ts` (machines), `dsp/` (303 voice engine and its AudioWorklet), `audio.ts` (effects, master, mixer), `transport.ts`, `midi.ts`, `record.ts`, `output.ts`, wired together in `main.ts`. The AssemblyScript port of the engine is in `assembly/`; `npm run dev`, `build` and `test` compile it to `src/dsp/voice.wasm` first.
 
 ### CI and releases
 
