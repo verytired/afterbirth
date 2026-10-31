@@ -24,10 +24,9 @@ const KEY = 'ab3389';
 const SAVED: Record<string, unknown> = (() => {
   try { return JSON.parse(localStorage.getItem(KEY) ?? '{}') || {}; } catch { return {}; }
 })();
-// ok: rejects saved patterns from an older layout of the machine (e.g. a drum part added)
-export function loadPats<P extends Pat>(name: string, fresh: (k: number) => Omit<P, 'shuf'>, ok: (p: P) => boolean = () => true): P[] {
+export function loadPats<P extends Pat>(name: string, fresh: (k: number) => Omit<P, 'shuf'>): P[] {
   const s = SAVED[name];
-  return Array.isArray(s) && s.length === 32 && s.every(ok) ? s as P[] : Array.from({ length: 32 }, (_, k) => ({ shuf: true, ...fresh(k) }) as P);
+  return Array.isArray(s) && s.length === 32 ? s as P[] : Array.from({ length: 32 }, (_, k) => ({ shuf: true, ...fresh(k) }) as P);
 }
 export function save() {
   try { localStorage.setItem(KEY, JSON.stringify(Object.fromEntries(machines.map(m => [m.name, m.pats])))); } catch { /* storage unavailable */ }

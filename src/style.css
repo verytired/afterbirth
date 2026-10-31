@@ -122,6 +122,10 @@ h2{margin:0 0 10px;font-size:18px;font-style:italic;font-weight:900;letter-spaci
 .meter i{position:absolute;left:0;right:0;bottom:0;background:linear-gradient(to top,#3c3 0 70%,#ee3 70% 90%,#f33 90%)}
 .meter b{position:absolute;top:-12px;left:0;width:12px;height:8px;background:#400}
 .meter b.on{background:#f22;box-shadow:0 0 6px #f22}
+.d909 .drow{grid-template-columns:28px repeat(4,40px) repeat(16,minmax(20px,1fr));min-width:760px}
+.dk{display:flex;flex-direction:column;align-items:center;gap:1px}
+.dk i{font-style:normal;font-size:7px;font-weight:700;letter-spacing:.3px}
+.drow button.off{opacity:.3}
 
 /* 606 */
 .d606{background:linear-gradient(#3a3a3a,#1e1e1e)}

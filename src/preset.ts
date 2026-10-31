@@ -86,13 +86,14 @@ export function installPreset(p: SongPreset) {
   stop();
   machines.forEach((m, k) => {
     for (let n = 1; n <= 8; n++) {
-      const pat = m.pats[p.bank * 8 + n - 1] as Pat & { steps?: object[]; grid?: boolean[][] };
+      const pat = m.pats[p.bank * 8 + n - 1] as Pat & { steps?: object[]; grid?: boolean[][]; len?: number };
       if (pat.steps) parse303(p.p303[k]?.[n - 1] ?? EMPTY303).forEach((s, i) => Object.assign(pat.steps![i], s));
       else pat.grid!.forEach((row, r) => {
         const src = p.drums[k - 2]?.[n - 1]?.[m.parts![r]] ?? '';
         row.forEach((_, c) => { row[c] = src[c] === 'x'; });
       });
       pat.shuf = false;
+      delete pat.len;
     }
   });
   const bars = songBars(parseSong(p.song)), auto: Auto = {};
