@@ -23,13 +23,15 @@ const DIODE_COMP: f64 = 0.6;
 const out = new StaticArray<f32>(128);
 
 let fs: f64 = 96000;
-let cutoff: f64 = 0.3; let reso: f64 = 12; let env: f64 = 0.5; let decay: f64 = 0.4; let accent: f64 = 0.6; let wave: f64 = 0;
+let cutoff: f64 = 0.3; let reso: f64 = 12; let env: f64 = 0.5; let decay: f64 = 0.9; let accent: f64 = 0.6; let wave: f64 = 0;
 let filter: f64 = 0;
 let phase: f64 = 0; let freq: f64 = 110; let target: f64 = 110; let sliding = false;
 let amp: f64 = 0; let ampTarget: f64 = 0; let fenv: f64 = 0; let fenvK: f64 = 0; let envAmt: f64 = 0; let sweep: f64 = 0;
 let l1: f64 = 0; let l2: f64 = 0; let l3: f64 = 0; let l4: f64 = 0; // ladder states
 let d1: f64 = 0; let d2: f64 = 0; let d3: f64 = 0; let d4: f64 = 0; // diode ladder states
 let kSlide: f64 = 0; let kAtt: f64 = 0; let kRel: f64 = 0; let kSweep: f64 = 0;
+
+function decayTau(knob: f64): f64 { return 0.015 * Math.pow(40, (knob - 0.05) / 1.45); }
 
 function polyBlep(t: f64, dt: f64): f64 {
   if (t < dt) { t /= dt; return t + t - t * t - 1; }
@@ -100,7 +102,7 @@ export function noteOn(f: f64, acc: f64, slide: i32): void {
   if (a > 0) sweep = Math.min(1, sweep + 0.5 * a);
   envAmt = env * 10 * (1 + a * (1 + sweep));
   fenv = 1;
-  fenvK = Math.exp(-1 / ((a > 0 ? 0.15 : decay) / 3 * fs));
+  fenvK = Math.exp(-1 / ((a > 0 ? 0.05 : decayTau(decay)) * fs));
   ampTarget = 0.5 + 0.5 * a;
 }
 

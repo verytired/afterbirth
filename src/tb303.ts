@@ -2,14 +2,14 @@ import { ctx } from './state';
 import { Channel } from './audio';
 import { loadPats, makeBank, mountDevice, type Machine, type Pat } from './rack';
 import { loadVoice } from './dsp/load';
-import { P_ACCENT, P_CUTOFF, P_DECAY, P_ENV, P_FILTER, P_RESO, P_WAVE } from './dsp/engine';
+import { P_ACCENT, P_CUTOFF, P_DECAY, P_ENV, P_FILTER, P_RESO, P_WAVE, decayTau } from './dsp/engine';
 import { config, type EngineChoice } from './config';
 import type { EngineName, ProcessorMsg, VoiceMsg } from './dsp/protocol';
 
 const NOTES = ['—', 'C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B', 'C+'];
 const KNOBS = [
   ['TUNE', 'tune', -12, 12, 1, 0], ['CUTOFF', 'cutoff', 0, 1, .001, .3], ['RESO', 'reso', 0, 20, .1, 12],
-  ['ENV MOD', 'env', 0, 1, .01, .5], ['DECAY', 'decay', .05, 1.5, .01, .4], ['ACCENT', 'accent', 0, 1, .01, .6],
+  ['ENV MOD', 'env', 0, 1, .01, .5], ['DECAY', 'decay', .05, 1.5, .01, .9], ['ACCENT', 'accent', 0, 1, .01, .6],
 ] as const;
 type KnobName = typeof KNOBS[number][1];
 const PARAM_IDS: Partial<Record<KnobName, number>> = { cutoff: P_CUTOFF, reso: P_RESO, env: P_ENV, decay: P_DECAY, accent: P_ACCENT };
@@ -162,7 +162,7 @@ export function make303(name: string, pattern: number[][], opt: Opt303 = {}): Ma
         vca.gain.setTargetAtTime(0.5 + 0.5 * acc, t, 0.002);
         const base = cutoffHz();
         const peak = Math.min(16000, base * (1 + v('env') * 10 * (1 + acc)));
-        const tau = (acc ? 0.15 : v('decay')) / 3;
+        const tau = acc ? 0.05 : decayTau(v('decay'));
         for (const f of [f1, f2]) {
           f.frequency.cancelScheduledValues(t);
           f.frequency.setValueAtTime(peak, t);

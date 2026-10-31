@@ -6,7 +6,7 @@
 export const P_CUTOFF = 0; // 0..1 knob
 export const P_RESO = 1;   // 0..20 knob
 export const P_ENV = 2;    // 0..1 knob
-export const P_DECAY = 3;  // 0.05..1.5 s knob
+export const P_DECAY = 3;  // 0.05..1.5 knob, see decayTau
 export const P_ACCENT = 4; // 0..1 knob
 export const P_WAVE = 5;   // 0 saw, 1 square
 export const P_FILTER = 6; // 0 ladder, 1 diode ladder
@@ -21,6 +21,10 @@ export const LADDER_K = 3.8;   // feedback at RESO max (self-oscillates at 4)
 export const DIODE_K = 17;     // feedback at RESO max (self-oscillates at about 18.5)
 const LADDER_COMP = 0.5;   // output make-up per unit of feedback (resonance thins the passband)
 const DIODE_COMP = 0.6;
+
+// DECAY knob -> filter envelope time constant: exponential 15 ms .. 600 ms, so the short, audible
+// range gets most of the knob (a 16th at 128 BPM only sounds for about 65 ms)
+export function decayTau(knob: number): number { return 0.015 * Math.pow(40, (knob - 0.05) / 1.45); }
 
 function polyBlep(t: number, dt: number): number {
   if (t < dt) { t /= dt; return t + t - t * t - 1; }
@@ -81,7 +85,7 @@ export class DiodeLadder {
 export class Voice303 {
   private fs: number;
   // params
-  private cutoff = 0.3; private reso = 12; private env = 0.5; private decay = 0.4; private accent = 0.6; private wave = 0;
+  private cutoff = 0.3; private reso = 12; private env = 0.5; private decay = 0.9; private accent = 0.6; private wave = 0;
   private filter = 0;
   // oscillator
   private phase = 0; private freq = 110; private target = 110; private sliding = false;
@@ -121,7 +125,7 @@ export class Voice303 {
     if (a > 0) this.sweep = Math.min(1, this.sweep + 0.5 * a); // consecutive accents open the filter further
     this.envAmt = this.env * 10 * (1 + a * (1 + this.sweep));
     this.fenv = 1;
-    this.fenvK = Math.exp(-1 / ((a > 0 ? 0.15 : this.decay) / 3 * this.fs));
+    this.fenvK = Math.exp(-1 / ((a > 0 ? 0.05 : decayTau(this.decay)) * this.fs)); // accented notes use a short fixed decay, as on the 303
     this.ampTarget = 0.5 + 0.5 * a;
   }
 
