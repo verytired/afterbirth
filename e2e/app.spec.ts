@@ -281,6 +281,17 @@ test('dragging a panel title reorders the rows (display only), remembered across
   expect((await titles()).slice(0, 2)).toEqual(['AB-303 #1', 'AB-606']);
 });
 
+test('faders: dragging the cap moves the value, double-click resets it', async ({ page }) => {
+  const f = page.locator('#mvol + .fdr'), box = (await f.boundingBox())!;
+  await page.mouse.move(box.x + 17, box.y + 30);
+  await page.mouse.down();
+  await page.mouse.move(box.x + 17, box.y + 75, { steps: 5 });
+  await page.mouse.up();
+  expect(+await page.inputValue('#mvol')).toBeLessThan(0.5);
+  await f.dblclick();
+  expect(await page.inputValue('#mvol')).toBe('0.8');
+});
+
 test('falls back to the JS engine when the WASM build cannot load', async ({ page }) => {
   await page.route('**/*.wasm', r => r.abort());
   await page.goto('./');

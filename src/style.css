@@ -68,7 +68,14 @@ h2{margin:0 0 10px;font-size:18px;font-style:italic;font-weight:900;letter-spaci
 .knob::after{content:'';position:absolute;left:50%;top:10%;width:3px;height:32%;margin-left:-1.5px;border-radius:2px;background:#222;
   transform-origin:50% 125%;transform:rotate(var(--a))}
 .knob:focus-visible{outline:2px solid #f39a1e}
-.fader{writing-mode:vertical-lr;direction:rtl;height:110px;width:24px;accent-color:#ddd;margin:0}
+/* Faders (backed by a hidden range input): slot, scale ticks, metal cap */
+.fdr{--p:0;position:relative;width:34px;height:110px;cursor:ns-resize;touch-action:none;flex:none;
+  background:linear-gradient(90deg,transparent 15px,#050505 15px,#050505 19px,transparent 19px),
+    repeating-linear-gradient(transparent 0 9px,rgba(0,0,0,.45) 9px 10px) 4px 0/26px 100% no-repeat}
+.fdr::after{content:'';position:absolute;left:2px;width:30px;height:20px;top:calc((1 - var(--p)) * (100% - 20px));border-radius:2px;
+  background:linear-gradient(transparent 9px,#222 9px,#222 11px,transparent 11px),linear-gradient(#fafafa,#bdbdbd 45%,#8a8a8a 55%,#d6d6d6);
+  box-shadow:0 2px 3px rgba(0,0,0,.7),inset 0 0 0 1px rgba(0,0,0,.35)}
+.fdr:focus-visible{outline:2px solid #f39a1e}
 
 /* 303 */
 .seq{display:grid;grid-template-columns:repeat(16,1fr);gap:3px;margin-top:12px;padding:6px;background:#1c1c1c;border-radius:3px}
