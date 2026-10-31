@@ -91,6 +91,8 @@ The same DSP exists twice, selectable per machine with **ENGINE**:
 
 WASM and JS are kept in sync by a unit test that renders both from the same note/knob events and requires them to match, for both filters. The startup ENGINE and FILTER are set in `src/config.ts`.
 
+The **AB-909** works the same way, with ENGINE WASM (`assembly/tr909.ts`) or JS (`src/dsp/tr909.ts`): each hit becomes a few components (oscillator, filtered noise, or 6-bit 18 kHz cymbal ROM played back with a zero-order hold), rendered in an AudioWorklet. The cymbal ROMs are synthesized stand-ins, not samples from the original.
+
 ## Using it with Ableton Live
 
 ### MIDI clock sync (Live → AB)
@@ -136,12 +138,12 @@ From **REC** in the top bar.
 |---|---|
 | `npm run dev` | Dev server with hot reload |
 | `npm run typecheck` | TypeScript type check |
-| `npm test` | Unit tests (Vitest): helpers in `src/lib.ts`, the 303 engine (determinism, stability at max settings, WASM output matching JS) and the 606 engine (WASM matching JS, levels, choke) |
+| `npm test` | Unit tests (Vitest): helpers in `src/lib.ts`, the 303 engine (determinism, stability at max settings, WASM output matching JS) and the 909 engine (WASM matching JS, hat choke, levels) and the 606 engine (WASM matching JS, levels, choke) |
 | `npm run e2e` | Builds, then drives the production build in Chrome with Playwright: playback level, pattern banks, MIDI clock, WAV and stem export (stems must sum back to MASTER), engine switching, fallback to JS when the WASM file is blocked |
 | `npm run check` | All of the above |
 | `node scripts/record-demo.mjs <song> <out.mp4> <url>` | Records a bundled song with the app's VIDEO recorder (1080p, MASTER audio) against a built app (`npm run build && npx vite preview`) |
 
-Code lives in `src/`: `tb303.ts` and `drums.ts` (machines), `dsp/` (303 voice engine and its AudioWorklet), `audio.ts` (effects, master, mixer), `transport.ts`, `midi.ts`, `record.ts`, `output.ts`, wired together in `main.ts`. The AssemblyScript port of the engine is in `assembly/`; `npm run dev`, `build` and `test` compile it to `src/dsp/voice.wasm` first.
+Code lives in `src/`: `tb303.ts` and `drums.ts` (machines), `dsp/` (303 voice and 909 drum engines and their AudioWorklets), `audio.ts` (effects, master, mixer), `transport.ts`, `midi.ts`, `record.ts`, `output.ts`, wired together in `main.ts`. The AssemblyScript ports of the engines are in `assembly/`; `npm run dev`, `build` and `test` compile them to `src/dsp/voice.wasm` and `src/dsp/tr909.wasm` first.
 
 ### CI and releases
 

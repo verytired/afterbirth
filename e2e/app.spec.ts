@@ -223,6 +223,17 @@ test('303 runs on the WASM engine and can switch engines while playing', async (
   }
 });
 
+const engine909 = '#devs .dev:nth-child(4) [name=engine]';
+test('909 runs on the WASM engine and can switch to JS while playing', async ({ page }) => {
+  await page.evaluate(() => { const g = (window.ab.machines[3].pats[0] as unknown as { grid: boolean[][] }).grid; g[0].fill(true); g[7].fill(true); });
+  await play(page);
+  await expect(page.locator(engine909)).toHaveValue('wasm');
+  expect(await channelPeak(page, 3, 1500)).toBeGreaterThan(0.05);
+  await page.selectOption(engine909, 'js');
+  await expect(page.locator(engine909)).toHaveValue('js');
+  expect(await channelPeak(page, 3, 1500)).toBeGreaterThan(0.05);
+});
+
 const bd606 = async (page: Page) => { for (const c of [0, 4, 8, 12]) await page.click(`.d606 [data-r="1"][data-c="${c}"]`); };
 
 test('606 plays on the WASM engine', async ({ page }) => {
@@ -238,6 +249,8 @@ test('falls back to the JS engine when the WASM build cannot load', async ({ pag
   await play(page);
   await expect(page.locator(engine303)).toHaveValue('js');
   await expect(page.locator(`${engine303} option[value=wasm]`)).toHaveJSProperty('disabled', true); // toBeDisabled() reports <option disabled> as enabled
+  await expect(page.locator(engine909)).toHaveValue('js');
+  await expect(page.locator(`${engine909} option[value=wasm]`)).toHaveJSProperty('disabled', true);
   expect(await channelPeak(page, 0, 1500)).toBeGreaterThan(0.05);
   await bd606(page);
   await expect(page.locator('.d606')).toHaveAttribute('data-engine', 'js');
