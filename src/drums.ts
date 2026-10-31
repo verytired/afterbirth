@@ -238,8 +238,8 @@ export const make909 = () => makeDrum('AB-909', 'd909',
         nz(t + 0.033, 0.3, 'bandpass', 1140, env(t + 0.033, l * 1.6, 0.25), undefined, 2);
       },
       // CH and OH are one voice on the 909: each hit cuts whatever hat is still ringing
-      CH: (t, l) => { choke(oh, t); const dec = 0.03 + 0.12 * kv('CHdec'); oh = env(t, l * 0.7, dec); playPcm('HH', t, 1, oh, dec); },
-      OH: (t, l) => { choke(oh, t); const dec = 0.15 + 0.75 * kv('OHdec'); oh = env(t, l * 0.7, dec); playPcm('HH', t, 1, oh, dec); },
+      CH: (t, l) => { choke(oh, t); const dec = 0.03 + 0.12 * kv('CHdec'); oh = env(t, l * 0.7, dec); playPcm('HH', t, tuned(kv('CHtune'), 1), oh, dec); },
+      OH: (t, l) => { choke(oh, t); const dec = 0.15 + 0.75 * kv('OHdec'); oh = env(t, l * 0.7, dec); playPcm('HH', t, tuned(kv('OHtune'), 1), oh, dec); },
       CR: (t, l) => playPcm('CR', t, tuned(kv('CRtune'), 1), env(t, l * 0.6, 2), 2),
       RD: (t, l) => playPcm('RD', t, tuned(kv('RDtune'), 1), env(t, l * 0.6, 1.8), 1.8),
     };
@@ -255,8 +255,8 @@ export const make909 = () => makeDrum('AB-909', 'd909',
       LT: [['LTtune', 'TUNE', 0.5], ['LTdec', 'DECAY', 0.4]],
       MT: [['MTtune', 'TUNE', 0.5], ['MTdec', 'DECAY', 0.4]],
       HT: [['HTtune', 'TUNE', 0.5], ['HTdec', 'DECAY', 0.4]],
-      CH: [['CHdec', 'DECAY', 0.3]],
-      OH: [['OHdec', 'DECAY', 0.4]],
+      CH: [['CHtune', 'TUNE', 0.5], ['CHdec', 'DECAY', 0.3]], // hat TUNE is an extension (TR-8S, Tiptop HATS909)
+      OH: [['OHtune', 'TUNE', 0.5], ['OHdec', 'DECAY', 0.4]],
       CR: [['CRtune', 'TUNE', 0.5]],
       RD: [['RDtune', 'TUNE', 0.5]],
     },
