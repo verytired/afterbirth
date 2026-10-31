@@ -36,7 +36,8 @@ Press ▶ to start (browsers keep audio suspended until the first click). Chrome
 | **DIST** | AMOUNT, SHAPE (soft clip to wavefold) |
 | **COMP** | RATIO, THRES |
 
-- Drag knobs up/down to turn them, double-click to reset. Arrow keys work when a knob has focus
+- Drag knobs up/down to turn them, double-click to reset. Arrow keys work when a knob has focus. Faders work the same way, the cap following the pointer
+- Click a machine's title to fold its row (pattern and MIX too) to one line; it keeps playing. Drag the title (or Alt+↑/↓) to reorder the rows. Both are remembered in the browser and only change the display: song slots, song files and MULTI OUT channels keep the original order
 - LED displays such as TEMPO change with −/+, the mouse wheel, or a vertical drag
 - Patterns autosave to localStorage (knob and mixer values are not saved)
 
@@ -156,6 +157,18 @@ Releases are created by CI too. Do not create them by hand; push an annotated ta
 git tag -a v0.4 -m "Release notes here"
 git push origin v0.4
 ```
+
+## Credits
+
+Made by [verytired](https://verytired.net) ([GitHub](https://github.com/verytired)).
+
+The voices are modeled from published descriptions of the original circuits. Sources used:
+
+- **TR-808**: Roland TR-808 Service Notes (1981), the voice chart on p.14 (frequencies, decays, accented levels) and the schematics; K. J. Werner, J. S. Abel, J. O. Smith, [A physically-informed, circuit-bendable, digital model of the Roland TR-808 bass drum circuit](https://dafx14.fau.de/papers/dafx14_kurt_james_werner_a_physically_informed,_ci.pdf) (DAFx-14); K. J. Werner, J. S. Abel, J. O. Smith, [The TR-808 cymbal: a physically-informed, circuit-bendable, digital model](https://speech.di.uoa.gr/ICMC-SMC-2014/images/VOL_2/1453.pdf) (ICMC/SMC 2014)
+- **TR-909**: Sound On Sound *Synth Secrets* (909 bass drum and snare); BD circuit notes in [HelveticaScenario/operator#169](https://github.com/HelveticaScenario/operator/pull/169); hat TUNE after the Roland TR-8S and Tiptop Audio HATS909; hat / ride resonances after DJ TechTools and Hannes Bieger
+- **TB-303 MODS**: after the Devil Fish modification by Robin Whittle (an independent implementation, not affiliated with him)
+
+Inspired by ReBirth RB-338 (Propellerhead Software).
 
 ## License
 

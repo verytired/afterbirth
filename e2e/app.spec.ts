@@ -292,6 +292,11 @@ test('faders: dragging the cap moves the value, double-click resets it', async (
   expect(await page.inputValue('#mvol')).toBe('0.8');
 });
 
+test('footer credits the author and shows the build version', async ({ page }) => {
+  await expect(page.locator('.credits a', { hasText: 'verytired' })).toHaveAttribute('href', 'https://verytired.net');
+  await expect(page.locator('.credits')).toContainText(/AB-3389 (v\d|[0-9a-f]{7})/); // a tag, or a hash when there is none
+});
+
 test('falls back to the JS engine when the WASM build cannot load', async ({ page }) => {
   await page.route('**/*.wasm', r => r.abort());
   await page.goto('./');
