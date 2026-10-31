@@ -9,7 +9,7 @@ import { download } from './record';
 import { SONG_FORMAT, checkSongFile, type SongFileData } from './lib';
 
 type Ctl = HTMLInputElement | HTMLSelectElement;
-type AnyPat = Pat & { steps?: object[]; grid?: boolean[][] };
+type AnyPat = Pat & { steps?: object[]; grid?: boolean[][]; len?: number };
 const devIndex = (el: Element) => [...$('devs').children].indexOf(el.closest('.dev')!);
 // Same keys as song automation: element id, or "<machine index>:<name>" inside a machine row
 const ctlKey = (el: Ctl) => el.id || `${devIndex(el)}:${el.name}`;
@@ -33,6 +33,7 @@ function collect(): SongFileData {
 // Copy a saved pattern into the live one in place (other code holds references to it)
 function copyInto(dst: AnyPat, src: Partial<AnyPat> | undefined) {
   dst.shuf = !!src?.shuf;
+  if (dst.grid) dst.len = src?.len;
   dst.steps?.forEach((s, i) => Object.assign(s, (src?.steps?.[i]) ?? { note: -1, oct: 0, acc: false, sld: false }));
   dst.grid?.forEach((row, r) => row.forEach((_, c) => { row[c] = !!src?.grid?.[r]?.[c]; }));
 }

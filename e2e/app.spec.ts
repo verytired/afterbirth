@@ -285,6 +285,9 @@ test('song files round-trip every pattern, control, toggle and the song into a f
   }, [sel, v]);
   await page.click(`${d1} [data-a=rand]`);
   await page.click(`${d3} .drow button[data-r="1"][data-c="3"]`); // an 808 SD hit
+  const d4 = '#devs .dev:nth-child(4)';
+  await page.click(`${d4} .drow button[data-r="9"][data-c="5"]`); // a 909 MT hit
+  for (let k = 0; k < 4; k++) await page.click(`${d4} [data-steps] button[aria-label=down]`); // 909 STEPS 12
   await setCtl(`${d1} [name=drive]`, '0.5');
   await setCtl(`${d1} [name=muffler]`, '2');
   await setCtl(`${d2} [name=selfosc]`, '1');
@@ -320,4 +323,24 @@ test('loading a file that is not a song reports it and changes nothing', async (
   await page.setInputFiles('#songfile', { name: 'x.json', mimeType: 'application/json', buffer: Buffer.from('{"hello":1}') });
   await expect(page.locator('#songcap')).toHaveText('LOAD FAILED: not an AfterBirth song file');
   expect(await page.evaluate(() => JSON.stringify(window.ab.machines.map(m => m.pats)))).toBe(before);
+});
+
+test('909: older 9-row saves load, and a short pattern loops on its own length', async ({ page }) => {
+  await page.evaluate(() => localStorage.setItem('ab3389', JSON.stringify({
+    'AB-909': Array.from({ length: 32 }, () => ({ shuf: false, grid: Array.from({ length: 9 }, (_, r) => Array.from({ length: 16 }, (_, c) => r === 7 && c === 2)) })),
+  })));
+  await page.reload();
+  const d4 = '#devs .dev:nth-child(4)';
+  expect(await page.evaluate(() => (window.ab.machines[3].pats[0] as unknown as { grid: boolean[][] }).grid.length)).toBe(13);
+  await expect(page.locator(`${d4} .drow button[data-r="7"][data-c="2"]`)).toHaveClass(/on/); // OH stays OH
+  for (let k = 0; k < 13; k++) await page.click(`${d4} [data-steps] button[aria-label=down]`);
+  await expect(page.locator(`${d4} [data-steps] .led`)).toHaveText('3');
+  await play(page);
+  const cols = new Set<string>();
+  for (let k = 0; k < 30; k++) {
+    cols.add(await page.evaluate(sel => document.querySelector(sel)?.getAttribute('data-c') ?? '', `${d4} .drow:first-child button.now`));
+    await page.waitForTimeout(40);
+  }
+  cols.delete('');
+  expect([...cols].sort()).toEqual(['0', '1', '2']);
 });
