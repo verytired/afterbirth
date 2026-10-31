@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>AfterBirth AB-3389</title>
+<link rel="icon" href="data:,">
 <style>
 :root{--screw:radial-gradient(circle,#999 0 3px,#444 3.5px,transparent 4.5px);--blue:linear-gradient(#7a8592,#4f5964)}
 body{background:#141414;color:#eee;font-family:"Helvetica Neue",Arial,sans-serif;margin:0;padding:12px}
@@ -998,6 +999,10 @@ document.querySelectorAll('input[type=range]:not(.fader)').forEach(inp => {
   };
   set();
 });
+
+// test hook
+window.ab = { get ctx() { return ctx; }, get playing() { return playing; }, get cur() { return cur; },
+  tempo, channels, FX, machines, master, onMidi, ensureAudio, setExt(v) { ext = v; } };
 </script>
 </body>
 </html>
