@@ -20,6 +20,7 @@ machines.push(
   make808(),
   make909(),
 );
+machines.forEach(m => m.rackReady?.());
 knobify(); // after all machines are mounted
 
 wireFx();

@@ -56,6 +56,7 @@ export function knobify() {
       const d = ({ ArrowUp: 1, ArrowRight: 1, ArrowDown: -1, ArrowLeft: -1 } as Record<string, number>)[e.key];
       if (d) { e.preventDefault(); set(+inp.value + d * (max - min) / 50); }
     };
+    inp.addEventListener('input', () => set()); // redraw when code changes the value
     set();
   });
 }

@@ -161,6 +161,57 @@ test('303 filter switches between diode and ladder while playing', async ({ page
   await expect(page.locator(filter303)).toBeDisabled();
 });
 
+// RMS of one mixer channel over ms
+const channelRms = (page: Page, ch: number, ms: number) => page.evaluate(async ([ch, ms]) => {
+  const ab = window.ab, an = ab.ctx.createAnalyser(), buf = new Float32Array(an.fftSize);
+  ab.channels[ch].out.connect(an);
+  let sum = 0, n = 0;
+  const t0 = performance.now();
+  while (performance.now() - t0 < ms) {
+    an.getFloatTimeDomainData(buf);
+    for (const x of buf) { sum += x * x; n++; }
+    await new Promise(r => setTimeout(r, 10));
+  }
+  ab.channels[ch].out.disconnect(an);
+  return Math.sqrt(sum / n);
+}, [ch, ms]);
+
+test('303 MODS reach the engine and are disabled for CLASSIC', async ({ page }) => {
+  const dev = '#devs .dev:nth-child(1)';
+  await play(page);
+  const before = await channelRms(page, 0, 1500);
+  await page.evaluate(sel => {
+    const inp = document.querySelector<HTMLInputElement>(`${sel} [name=vegdec]`)!;
+    inp.value = '0';
+    inp.dispatchEvent(new Event('input'));
+  }, dev);
+  const after = await channelRms(page, 0, 1500);
+  expect(after).toBeLessThan(before * 0.6); // VEG DEC at min fades every note quickly
+  await page.selectOption(`${dev} [name=engine]`, 'classic');
+  await expect(page.locator(`${dev} .mods`)).toHaveClass(/off/);
+});
+
+test('Dynamic Bank Switching reads steps from the flipped bank while held or triggered', async ({ page }) => {
+  const dev = '#devs .dev:nth-child(1)';
+  const bar2 = 3750; // two bars at 128 BPM, so every measurement covers whole patterns
+  await play(page);
+  const normal = await channelRms(page, 0, bar2);
+  expect(normal).toBeGreaterThan(0.03);
+
+  // Holding A reads A2, which is empty: silence
+  const btn = page.locator(`${dev} [data-dbs=A]`);
+  await btn.dispatchEvent('pointerdown');
+  await page.waitForTimeout(300);
+  expect(await channelRms(page, 0, 1000)).toBeLessThan(normal * 0.1);
+  await btn.dispatchEvent('pointerup');
+
+  // Triggered by the 808 BD: only the BD steps go silent
+  await page.selectOption(`${dev} [name=dbsA]`, { label: '808 BD' });
+  const triggered = await channelRms(page, 0, bar2);
+  expect(triggered).toBeLessThan(normal * 0.95);
+  expect(triggered).toBeGreaterThan(normal * 0.3);
+});
+
 test('303 runs on the WASM engine and can switch engines while playing', async ({ page }) => {
   await play(page);
   await expect(page.locator(engine303)).toHaveValue('wasm');

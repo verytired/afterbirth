@@ -10,6 +10,17 @@ export const P_DECAY = 3;  // 0.05..1.5 knob, see decayTau
 export const P_ACCENT = 4; // 0..1 knob
 export const P_WAVE = 5;   // 0 saw, 1 square
 export const P_FILTER = 6; // 0 ladder, 1 diode ladder
+// MODS (Devil Fish style), all 0..1 knobs whose defaults reproduce the stock voice
+export const P_ACC_DECAY = 7;   // accented notes' filter decay, default 0.5
+export const P_VEG_DECAY = 8;   // volume decay while the note is held, default 1 = no decay
+export const P_SOFT_ATTACK = 9; // attack of non-accented notes, default 0.5
+export const P_SLIDE_TIME = 10; // default 0
+export const P_SWEEP = 11;      // accent sweep speed, default 0.5
+export const P_FILTER_FM = 12;  // cutoff modulated by the voice's own output, default 0
+export const P_TRACKING = 13;   // cutoff follows the note, 1 = full, default 0
+export const P_DRIVE = 14;      // filter input gain, default 0
+export const P_MUFFLER = 15;    // output soft clip: 0 off, 1 soft, 2 hard
+export const P_SELF_OSC = 16;   // 1 = RESO can push the filter into self-oscillation
 
 const OS = 2;              // oversampling factor
 const SLIDE_TAU = 0.03;
@@ -24,7 +35,21 @@ const DIODE_COMP = 0.6;
 
 // DECAY knob -> filter envelope time constant: exponential 15 ms .. 600 ms, so the short, audible
 // range gets most of the knob (a 16th at 128 BPM only sounds for about 65 ms)
-export function decayTau(knob: number): number { return 0.015 * Math.pow(40, (knob - 0.05) / 1.45); }
+// Above the default (0.9) it stretches to 3 s, and the max position holds (Devil Fish ranges)
+const DECAY_09 = 0.015 * Math.pow(40, 0.85 / 1.45);
+export function decayTau(knob: number): number {
+  if (knob >= 1.5) return Infinity;
+  if (knob <= 0.9) return 0.015 * Math.pow(40, (knob - 0.05) / 1.45);
+  return DECAY_09 * Math.pow(3 / DECAY_09, (knob - 0.9) / 0.6);
+}
+
+// Knob -> time constant maps. Each returns exactly the stock value at its default position
+export const accDecayTau = (k: number) => // 16 ms .. 3 s, max = no decay
+  k >= 1 ? Infinity : k < 0.5 ? 0.05 * Math.pow(0.32, (0.5 - k) * 2) : 0.05 * Math.pow(60, (k - 0.5) * 2);
+export const attackTau = (k: number) => ATTACK_TAU * Math.pow(10, (k - 0.5) * 2); // 0.2 ms .. 20 ms
+export const slideTau = (k: number) => SLIDE_TAU * Math.pow(5, k);              // up to 5x the stock slide
+export const sweepTau = (k: number) => SWEEP_TAU * Math.pow(4, (k - 0.5) * 2);  // 0.1 .. 1.6 s
+export const vegTau = (k: number) => 0.016 * Math.pow(200, k);                  // 16 ms .. 3.2 s, max = hold
 
 function polyBlep(t: number, dt: number): number {
   if (t < dt) { t /= dt; return t + t - t * t - 1; }
@@ -87,10 +112,11 @@ export class Voice303 {
   // params
   private cutoff = 0.3; private reso = 12; private env = 0.5; private decay = 0.9; private accent = 0.6; private wave = 0;
   private filter = 0;
+  private fm = 0; private tracking = 0; private drive = 1; private muffler = 0; private accDecay = 0.05; private selfOsc = 0;
   // oscillator
   private phase = 0; private freq = 110; private target = 110; private sliding = false;
   // envelopes
-  private amp = 0; private ampTarget = 0; private fenv = 0; private fenvK = 0; private envAmt = 0; private sweep = 0;
+  private amp = 0; private ampTarget = 0; private veg = 1; private vegK = 1; private yPrev = 0; private fenv = 0; private fenvK = 0; private envAmt = 0; private sweep = 0;
   // filters
   private ladder = new Ladder();
   private diode = new DiodeLadder();
@@ -113,6 +139,16 @@ export class Voice303 {
     else if (id === P_ACCENT) this.accent = v;
     else if (id === P_WAVE) this.wave = v;
     else if (id === P_FILTER) this.filter = v;
+    else if (id === P_ACC_DECAY) this.accDecay = accDecayTau(v);
+    else if (id === P_VEG_DECAY) this.vegK = v >= 1 ? 1 : Math.exp(-1 / (vegTau(v) * this.fs));
+    else if (id === P_SOFT_ATTACK) this.kAtt = 1 - Math.exp(-1 / (attackTau(v) * this.fs));
+    else if (id === P_SLIDE_TIME) this.kSlide = 1 - Math.exp(-1 / (slideTau(v) * this.fs));
+    else if (id === P_SWEEP) this.kSweep = Math.exp(-1 / (sweepTau(v) * this.fs));
+    else if (id === P_FILTER_FM) this.fm = v;
+    else if (id === P_TRACKING) this.tracking = v;
+    else if (id === P_DRIVE) this.drive = Math.pow(10, v * 1.8235); // up to x66.6
+    else if (id === P_MUFFLER) this.muffler = v;
+    else if (id === P_SELF_OSC) this.selfOsc = v;
   }
 
   // slide = 1: glide from the previous note without retriggering the envelopes (303 slide)
@@ -125,7 +161,8 @@ export class Voice303 {
     if (a > 0) this.sweep = Math.min(1, this.sweep + 0.5 * a); // consecutive accents open the filter further
     this.envAmt = this.env * 10 * (1 + a * (1 + this.sweep));
     this.fenv = 1;
-    this.fenvK = Math.exp(-1 / ((a > 0 ? 0.05 : decayTau(this.decay)) * this.fs)); // accented notes use a short fixed decay, as on the 303
+    this.fenvK = Math.exp(-1 / ((a > 0 ? this.accDecay : decayTau(this.decay)) * this.fs)); // accented notes have their own decay
+    this.veg = 1;
     this.ampTarget = 0.5 + 0.5 * a;
   }
 
@@ -133,8 +170,9 @@ export class Voice303 {
 
   render(out: Float32Array, offset: number, n: number): void {
     const diode = this.filter >= 0.5;
-    const k = (diode ? DIODE_K : LADDER_K) * this.reso / 20;
-    const comp = 1 + k * (diode ? DIODE_COMP : LADDER_COMP);
+    const kStock = (diode ? DIODE_K : LADDER_K) * this.reso / 20;
+    const k = this.selfOsc >= 0.5 ? kStock * 1.3 : kStock; // 1.3x reaches past self-oscillation for both filters
+    const comp = 1 + kStock * (diode ? DIODE_COMP : LADDER_COMP);
     const base = 60 * Math.pow(100, this.cutoff);
     const maxFc = 0.45 * this.fs;
     for (let i = 0; i < n; i++) {
@@ -157,13 +195,19 @@ export class Voice303 {
         this.fenv *= this.fenvK;
         this.sweep *= this.kSweep;
         this.amp += (this.ampTarget - this.amp) * (this.ampTarget > this.amp ? this.kAtt : this.kRel);
-        // filter
-        const fc = Math.min(maxFc, Math.min(16000, base * (1 + this.envAmt * this.fenv)));
+        this.veg *= this.vegK;
+        // filter: envelope, key tracking, audio-rate FM from the previous output
+        const mod = Math.pow(this.freq / 110, this.tracking) * Math.pow(2, this.fm * 8 * this.yPrev);
+        const fc = Math.min(maxFc, Math.min(16000, base * (1 + this.envAmt * this.fenv) * mod));
         const g = Math.tan(Math.PI * fc / this.fs);
+        x *= this.drive;
         const y = diode ? this.diode.tick(x, g, k) : this.ladder.tick(x, g, k);
-        acc += y * this.amp;
+        this.yPrev = y * (this.amp * this.veg);
+        acc += this.yPrev;
       }
-      out[offset + i] = acc / OS * GAIN * comp; // decimate by averaging, make up resonance level loss
+      let o = acc / OS * GAIN * comp; // decimate by averaging, make up resonance level loss
+      if (this.muffler >= 0.5) { const m = this.muffler >= 1.5 ? 4 : 1.5; o = Math.tanh(o * m) / m; }
+      out[offset + i] = o;
     }
   }
 }

@@ -72,6 +72,7 @@ function makeDrum(name: string, cls: string, pat: Record<string, string>, voices
 
   return {
     name, pats, bank, parts: V,
+    hit: (part, i) => grid[V.indexOf(part)]?.[i] ?? false,
     init() {
       ch.init();
       out = ctx.createGain(); out.connect(ch.inp);
