@@ -19,7 +19,7 @@ Press ▶ to start (browsers keep audio suspended until the first click). Chrome
 
 | Unit | What it does |
 |---|---|
-| **AB-303 #1 / #2** | ENGINE (WASM / JS / CLASSIC), SAW / SQUARE, TUNE / CUTOFF / RESO / ENV MOD / DECAY / ACCENT. 16 steps with note, UP / DN, ACC (accent) and SLD (slide) |
+| **AB-303 #1 / #2** | ENGINE (WASM / JS / CLASSIC), FILTER (DIODE / LADDER), SAW / SQUARE, TUNE / CUTOFF / RESO / ENV MOD / DECAY / ACCENT. 16 steps with note, UP / DN, ACC (accent) and SLD (slide) |
 | **AB-808** | BD / SD / CH / OH / CP. Fully synthesized; CH chokes OH |
 | **AB-909** | BD / SD / LT / HT / RS / CP / CH / OH / CR |
 | **PATTERN** | 32 patterns per machine (1-8 × A-D). Switching while playing waits for the next bar. SHUFFLE on/off per pattern |
@@ -36,7 +36,14 @@ Press ▶ to start (browsers keep audio suspended until the first click). Chrome
 
 ## 303 voice engine
 
-Each AB-303 voice runs in an AudioWorklet: a PolyBLEP oscillator into a nonlinear 4-pole ladder filter (zero-delay feedback, saturated input, 2× oversampled), with the filter/amp envelopes, slide and an accent sweep that opens the filter further on consecutive accents.
+Each AB-303 voice runs in an AudioWorklet: a PolyBLEP oscillator into a nonlinear 4-pole filter (zero-delay feedback, saturated input, 2× oversampled), with the filter/amp envelopes, slide and an accent sweep that opens the filter further on consecutive accents.
+
+**FILTER** picks the filter model:
+
+| FILTER | Model |
+|---|---|
+| **DIODE** (default) | TB-303-style diode ladder: coupled stages, about -12 to -18 dB/oct near cutoff steepening to -24 above, resonance thins the bass |
+| **LADDER** | Transistor (Moog-style) ladder: four identical stages, -24 dB/oct |
 
 The same DSP exists twice, selectable per machine with **ENGINE**:
 
@@ -46,7 +53,7 @@ The same DSP exists twice, selectable per machine with **ENGINE**:
 | **JS** | `src/dsp/engine.ts`. Used automatically if the WASM build cannot load |
 | **CLASSIC** | The original Web Audio graph (OscillatorNode + two BiquadFilters), kept for comparison |
 
-WASM and JS are kept in sync by a unit test that renders both from the same note/knob events and requires them to match.
+WASM and JS are kept in sync by a unit test that renders both from the same note/knob events and requires them to match, for both filters. The startup ENGINE and FILTER are set in `src/config.ts`.
 
 ## Using it with Ableton Live
 
