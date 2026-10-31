@@ -157,6 +157,18 @@ git tag -a v0.4 -m "Release notes here"
 git push origin v0.4
 ```
 
+## Credits
+
+Made by [verytired](https://verytired.net) ([GitHub](https://github.com/verytired)).
+
+The voices are modeled from published descriptions of the original circuits. Sources used:
+
+- **TR-808**: Roland TR-808 Service Notes (1981), the voice chart on p.14 (frequencies, decays, accented levels) and the schematics; K. J. Werner, J. S. Abel, J. O. Smith, [A physically-informed, circuit-bendable, digital model of the Roland TR-808 bass drum circuit](https://dafx14.fau.de/papers/dafx14_kurt_james_werner_a_physically_informed,_ci.pdf) (DAFx-14); K. J. Werner, J. S. Abel, J. O. Smith, [The TR-808 cymbal: a physically-informed, circuit-bendable, digital model](https://speech.di.uoa.gr/ICMC-SMC-2014/images/VOL_2/1453.pdf) (ICMC/SMC 2014)
+- **TR-909**: Sound On Sound *Synth Secrets* (909 bass drum and snare); BD circuit notes in [HelveticaScenario/operator#169](https://github.com/HelveticaScenario/operator/pull/169); hat TUNE after the Roland TR-8S and Tiptop Audio HATS909; hat / ride resonances after DJ TechTools and Hannes Bieger
+- **TB-303 MODS**: after the Devil Fish modification by Robin Whittle (an independent implementation, not affiliated with him)
+
+Inspired by ReBirth RB-338 (Propellerhead Software).
+
 ## License
 
 [MIT](LICENSE)
