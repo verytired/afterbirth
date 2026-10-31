@@ -10,9 +10,9 @@ let multi = false, devsLoaded = false;
 
 function applyOut() {
   if (!ctx) return;
-  const n = multi ? Math.min(10, ctx.destination.maxChannelCount) : 2;
+  const n = multi ? Math.min(12, ctx.destination.maxChannelCount) : 2;
   ctx.destination.channelCount = n;
-  $('multi').textContent = multi && n < 10 ? `MULTI OUT (${n}ch only)` : 'MULTI OUT';
+  $('multi').textContent = multi && n < 12 ? `MULTI OUT (${n}ch only)` : 'MULTI OUT';
 }
 
 export function wireOutput() {

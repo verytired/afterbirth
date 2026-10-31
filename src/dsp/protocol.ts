@@ -11,3 +11,6 @@ export type VoiceMsg =
 export type ProcessorMsg =
   | { k: 'engine'; name: EngineName }
   | { k: 'error'; msg: string };
+
+// Main thread -> 606 worklet: one drum hit (v: part index, l: level with accent, s: one 16th in seconds)
+export type DrumMsg = { k: 'trig'; t: number; v: number; l: number; s: number };

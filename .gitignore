@@ -3,3 +3,4 @@ dist/
 test-results/
 playwright-report/
 src/dsp/voice.wasm
+src/dsp/tr606.wasm

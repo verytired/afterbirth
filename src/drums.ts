@@ -1,8 +1,11 @@
 import { ctx } from './state';
 import { Channel } from './audio';
+import { load606 } from './dsp/load';
+import { BD, SD, LT, HT, CY, CH, OH } from './dsp/tr606';
+import type { DrumMsg, ProcessorMsg } from './dsp/protocol';
 import { loadPats, makeBank, mountDevice, type Machine, type Pat } from './rack';
 
-type Hit = (t: number, level: number) => void;
+type Hit = (t: number, level: number, step: number) => void; // step: one 16th in seconds
 interface VoiceApi {
   env(t: number, peak: number, dec: number): GainNode;
   nz(t: number, dur: number, type: BiquadFilterType, f: number, dest: AudioNode): void;
@@ -13,10 +16,12 @@ interface VoiceApi {
 interface PatDrum extends Pat { grid: boolean[][] }
 
 // pat: { partName: 'x...x...' } for pattern A1. voices(api) returns { partName: hit }
-function makeDrum(name: string, cls: string, pat: Record<string, string>, voices: (api: VoiceApi) => Record<string, Hit>): Machine {
+function makeDrum(name: string, cls: string, pat: Record<string, string>, voices: (api: VoiceApi) => Record<string, Hit>,
+  boot?: (out: GainNode) => Promise<void>): Machine { // boot: async setup at audio start, e.g. a worklet engine
   const [bankEl, root, mixEl] = mountDevice(cls);
   const V = Object.keys(pat);
-  const pats = loadPats<PatDrum>(name, k => ({ grid: V.map(v => [...pat[v]].map(c => k === 0 && c === 'x')) }));
+  const pats = loadPats<PatDrum>(name, k => ({ grid: V.map(v => [...pat[v]].map(c => k === 0 && c === 'x')) }),
+    p => p.grid?.length === V.length);
   let grid = pats[0].grid;
   root.innerHTML = `<h2>${name}</h2><div class="drums">` + V.map((k, r) =>
     `<div class="drow"><b>${k}</b><input type="range" name="${k}" min="0" max="1" step="0.01" value="0.8">` +
@@ -69,6 +74,7 @@ function makeDrum(name: string, cls: string, pat: Record<string, string>, voices
     nz(t, 0.3, 'bandpass', f, g);
   };
   const hit = voices({ env, nz, tone, choke, clap });
+  const ac = V.indexOf('AC'); // global accent row: not a sound, raises every voice on its steps
 
   return {
     name, pats, bank, parts: V,
@@ -79,11 +85,13 @@ function makeDrum(name: string, cls: string, pat: Record<string, string>, voices
       noise = ctx.createBuffer(1, ctx.sampleRate * 2, ctx.sampleRate);
       const c = noise.getChannelData(0);
       for (let i = 0; i < c.length; i++) c[i] = Math.random() * 2 - 1;
+      return boot?.(out);
     },
-    play(i, t, _d, sh) {
+    play(i, t, d, sh) {
       bank.tick(i);
       if (bank.pat.shuf) t += sh;
-      V.forEach((k, r) => grid[r][i] && hit[k](t, lv(k)));
+      const a = ac >= 0 && grid[ac][i] ? 1 + lv('AC') * 0.6 : 1;
+      V.forEach((k, r) => r !== ac && grid[r][i] && hit[k](t, lv(k) * a, d));
     },
     stop() { bank.tick(0); },
     highlight(i) { btns.forEach(b => b.classList.toggle('now', +b.dataset.c! === i)); },
@@ -127,3 +135,23 @@ export const make909 = () => makeDrum('AB-909', 'd909',
       CR: (t, l) => nz(t, 1.5, 'highpass', 5000, env(t, l * 0.4, 1.5)),
     };
   });
+
+// Empty by default like the 909. The sound comes from the 606 engine (src/dsp/tr606.ts, WASM build in
+// assembly/tr606.ts) in an AudioWorklet; this side only sends hits. One global accent row
+export const make606 = () => {
+  let node: AudioWorkletNode | undefined;
+  const trig = (v: number): Hit => (t, l, s) => node?.port.postMessage({ k: 'trig', t, v, l, s } satisfies DrumMsg);
+  return makeDrum('AB-606', 'd606',
+    { AC: '................', BD: '................', SD: '................', LT: '................', HT: '................',
+      CY: '................', CH: '................', OH: '................' },
+    () => ({ BD: trig(BD), SD: trig(SD), LT: trig(LT), HT: trig(HT), CY: trig(CY), CH: trig(CH), OH: trig(OH) }),
+    async out => {
+      const wasm = await load606(ctx);
+      node = new AudioWorkletNode(ctx, 'tr606', { numberOfInputs: 0, numberOfOutputs: 1, outputChannelCount: [1], processorOptions: { wasm } });
+      node.port.onmessage = (e: MessageEvent<ProcessorMsg>) => {
+        if (e.data.k === 'engine') document.querySelector<HTMLElement>('.d606')!.dataset.engine = e.data.name;
+        if (e.data.k === 'error') console.warn('606 engine:', e.data.msg);
+      };
+      node.connect(out);
+    });
+};
