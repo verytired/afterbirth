@@ -1,79 +1,79 @@
 # AfterBirth AB-3389
 
-ブラウザで動くアシッド・グルーヴボックス。TB-303 系ベースライン × 2、808 系 / 909 系ドラムマシン、ミキサー、エフェクトを Web Audio API だけで鳴らします。外部ライブラリなし、`index.html` 1 ファイル。
+An acid groovebox that runs in the browser: two TB-303-style bass lines, 808- and 909-style drum machines, a mixer and effects, all built on the Web Audio API alone. No external libraries, a single `index.html`.
 
-**▶ ブラウザで遊ぶ: https://verytired.github.io/afterbirth/**
+**▶ Play in your browser: https://verytired.github.io/afterbirth/**
 
 ![screenshot](docs/screenshot.png)
 
-## 起動
+## Getting started
 
 ```sh
-open index.html   # またはブラウザにドラッグ
+open index.html   # or drag it into a browser
 ```
 
-▶ を押すと音が出ます（ブラウザの仕様で最初のクリックまでは音声が止まっています）。Chrome / Edge 推奨。
+Press ▶ to start (browsers keep audio suspended until the first click). Chrome / Edge recommended.
 
-## 構成
+## Units
 
-| ユニット | 内容 |
+| Unit | What it does |
 |---|---|
-| **AB-303 #1 / #2** | SAW / SQUARE、TUNE / CUTOFF / RESO / ENV MOD / DECAY / ACCENT。16 ステップで音程・UP / DN・ACC（アクセント）・SLD（スライド） |
-| **AB-808** | BD / SD / CH / OH / CP。全部シンセで生成、CH が OH をチョーク |
+| **AB-303 #1 / #2** | SAW / SQUARE, TUNE / CUTOFF / RESO / ENV MOD / DECAY / ACCENT. 16 steps with note, UP / DN, ACC (accent) and SLD (slide) |
+| **AB-808** | BD / SD / CH / OH / CP. Fully synthesized; CH chokes OH |
 | **AB-909** | BD / SD / LT / HT / RS / CP / CH / OH / CR |
-| **PATTERN** | 各マシン 32 パターン（1〜8 × A〜D）。再生中の切替は次の小節頭。パターンごとに SHUFFLE の ON / OFF |
-| **MIX** | ミュート、PAN、DELAY センド、フェーダー、DIST / PCF / COMP のインサート |
-| **MASTER** | メーター、マスターフェーダー、マスター COMP |
-| **PCF** | パターンでフィルターを開閉するエフェクト。32 パターン、LP / BP、FREQ / Q / AMT / DEC |
-| **DELAY** | テンポ同期（ステップ数、♪ / 3 連）、PAN、F.BACK |
-| **DIST** | AMOUNT、SHAPE（ソフトクリップ〜ウェーブフォールド） |
-| **COMP** | RATIO、THRES |
+| **PATTERN** | 32 patterns per machine (1-8 × A-D). Switching while playing waits for the next bar. SHUFFLE on/off per pattern |
+| **MIX** | Mute, PAN, DELAY send, fader, DIST / PCF / COMP inserts |
+| **MASTER** | Meter, master fader, master COMP |
+| **PCF** | Pattern-controlled filter. 32 patterns, LP / BP, FREQ / Q / AMT / DEC |
+| **DELAY** | Tempo-synced (steps, straight / triplet), PAN, F.BACK |
+| **DIST** | AMOUNT, SHAPE (soft clip to wavefold) |
+| **COMP** | RATIO, THRES |
 
-- ノブは上下ドラッグで回す、ダブルクリックで初期値。フォーカスして矢印キーでも動く
-- TEMPO などの LED 表示は −/+、ホイール、上下ドラッグで変更
-- パターンは localStorage に自動保存（ノブ・ミキサーの値は保存しない）
+- Drag knobs up/down to turn them, double-click to reset. Arrow keys work when a knob has focus
+- LED displays such as TEMPO change with −/+, the mouse wheel, or a vertical drag
+- Patterns autosave to localStorage (knob and mixer values are not saved)
 
-## Ableton Live と使う
+## Using it with Ableton Live
 
-### MIDI クロック同期（Live → AB）
+### MIDI clock sync (Live → AB)
 
-1. 「Audio MIDI 設定」で IAC ドライバを有効にする
-2. Live の環境設定 → Link/Tempo/MIDI で IAC の出力の **Sync** をオン
-3. AB の **EXT SYNC** を押して MIDI アクセスを許可
-4. Live を再生すると AB が追従（Start / Stop / Continue / ソングポジション対応、テンポは自動）
+1. Enable the IAC Driver in Audio MIDI Setup
+2. In Live's Preferences → Link/Tempo/MIDI, turn on **Sync** for the IAC output
+3. Press **EXT SYNC** in AB and allow MIDI access
+4. Hit play in Live and AB follows (Start / Stop / Continue / Song Position supported, tempo follows automatically)
 
-ずれる場合は Live 側の **MIDI Clock Sync Delay** で調整してください。
+If timing drifts, adjust Live's **MIDI Clock Sync Delay**.
 
-### オーディオを DAW に録る（AB → Live）
+### Recording audio into a DAW (AB → Live)
 
-1. [BlackHole 16ch](https://github.com/ExistentialAudio/BlackHole) を入れる（`brew install blackhole-16ch`）
-2. AB の **OUTPUT** で BlackHole 16ch を選ぶ（デバイス名を出すため初回だけマイク許可を求められます。録音はしません）
-3. **MULTI OUT** をオン
+1. Install [BlackHole 16ch](https://github.com/ExistentialAudio/BlackHole) (`brew install blackhole-16ch`)
+2. Choose BlackHole 16ch under **OUTPUT** in AB (the first time, the browser asks for microphone permission just to show device names; nothing is recorded)
+3. Turn on **MULTI OUT**
 
-| ch | 中身 |
+| ch | Content |
 |---|---|
-| 1/2 | MASTER（DELAY・マスター COMP 込み） |
+| 1/2 | MASTER (including DELAY and master COMP) |
 | 3/4 | AB-303 #1 |
 | 5/6 | AB-303 #2 |
 | 7/8 | AB-808 |
 | 9/10 | AB-909 |
 
-4. Live の入力デバイスを BlackHole 16ch にし、各トラックの入力を Ext. In 3/4 … に割り当てて録音
+4. In Live, set the input device to BlackHole 16ch, route each track's input to Ext. In 3/4 and so on, and record
 
-各マシンの個別出力はフェーダーとインサート（DIST / PCF / COMP）の後。DELAY とマスター COMP は 1/2 にだけ乗ります。出力先の切り替えは Chrome / Edge のみ対応。
+Per-machine outputs are taken after the fader and inserts (DIST / PCF / COMP). DELAY and master COMP are only on 1/2. Output device switching works in Chrome / Edge only.
 
-## 録音・録画
+## Recording and video
 
-トップバーの **REC** から。
+From **REC** in the top bar.
 
-- **● WAV**：MASTER（フェーダー後）を 16bit ステレオ WAV で録音。もう一度押すと停止して `afterbirth-YYYYMMDD-HHMMSS.wav` をダウンロード。そのまま DAW に読み込めます
-- **● VIDEO**：画面共有で AB のタブを選ぶと、画面と MASTER の音をまとめて録画。もう一度押すか共有を止めると終了。Chrome では mp4、それ以外は webm
-- 録音中はメモリに溜めるので長時間は不向き（10 分でおよそ 200MB）
+- **● WAV**: records MASTER (post-fader) as a 16-bit stereo WAV. Press again to stop and download `afterbirth-YYYYMMDD-HHMMSS.wav`, ready to drop into a DAW
+- **● VIDEO**: pick the AB tab in the screen-share dialog to record the screen together with MASTER audio. Press again, or stop sharing, to finish. mp4 in Chrome, webm elsewhere
+- Recordings are buffered in memory, so long takes are not a good fit (about 200MB per 10 minutes)
 
-## ライセンス
+## License
 
 [MIT](LICENSE)
 
-## 免責
+## Disclaimer
 
-ReBirth RB-338 にインスパイアされた非公式のファン作品です。Reason Studios（旧 Propellerhead Software）および Roland とは関係ありません。303 / 808 / 909 は機種の系統を示すためにだけ使っています。
+An unofficial fan project inspired by ReBirth RB-338. Not affiliated with Reason Studios (formerly Propellerhead Software) or Roland. 303 / 808 / 909 are used only to describe the style of each machine.

@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="ja">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -14,7 +14,7 @@ label{display:flex;flex-direction:column;align-items:center;gap:4px;font-size:10
 button,select{font:inherit;font-size:11px}
 h2{margin:0 0 10px;font-size:18px;font-style:italic;font-weight:900;letter-spacing:1px}
 
-/* トップバー */
+/* Top bar */
 .top{grid-column:1/-1;display:flex;flex-wrap:wrap;align-items:center;gap:18px;padding:8px 14px;background:linear-gradient(#97a3b0,#5d6873);border-radius:3px;color:#1d2329}
 .logo{margin-left:auto;font-style:italic;font-weight:900;font-size:30px;line-height:.9;color:#e8eef4;text-shadow:0 2px 0 #333;text-align:right}
 .logo small{display:block;font-size:26px;color:#3b4652;text-shadow:0 1px 0 #b8c0c8}
@@ -24,13 +24,13 @@ h2{margin:0 0 10px;font-size:18px;font-style:italic;font-weight:900;letter-spaci
 .tog.recording{background:linear-gradient(#f66,#c11);color:#fff;box-shadow:0 0 8px #f33}
 .tp.play.on{box-shadow:0 0 10px #c7f05a}
 
-/* LED 数値表示 */
+/* LED number display */
 .num{display:inline-flex;align-items:center;gap:2px}
 .num button{width:22px;height:32px;border:1px solid #111;border-radius:2px;background:linear-gradient(#eee,#aaa);font-weight:900;cursor:pointer}
 .led{min-width:54px;padding:0 4px;height:32px;line-height:32px;background:#1a0000;border:2px inset #333;color:#ff2a1a;
   font:700 26px "Courier New",monospace;text-align:center;text-shadow:0 0 8px #f00;cursor:ns-resize;touch-action:none;user-select:none}
 
-/* 共通の箱 */
+/* Shared boxes */
 .devs{display:flex;flex-direction:column;gap:4px;min-width:0}
 .dev{display:grid;grid-template-columns:118px minmax(0,1fr) 128px;gap:4px}
 .box{border-radius:3px;padding:8px;background:var(--blue);color:#eef}
@@ -40,7 +40,7 @@ h2{margin:0 0 10px;font-size:18px;font-style:italic;font-weight:900;letter-spaci
 .tog{padding:4px 6px;border:1px solid #111;border-radius:2px;background:linear-gradient(#f2f2f2,#bdbdbd);color:#333;font-weight:800;cursor:pointer}
 .tog.on{background:linear-gradient(#d9f0ff,#8cc8ff);color:#04a;box-shadow:0 0 6px #8cc8ff}
 
-/* パターン列 */
+/* Pattern column */
 .bankbox .hdr{background:#c8291f;color:#fff}
 .bank{display:grid;grid-template-columns:repeat(4,1fr);gap:3px}
 .bank button{height:26px;border:1px solid #111;border-radius:2px;background:linear-gradient(#f0f0f0,#bcbcbc);color:#333;font-weight:800;cursor:pointer}
@@ -52,13 +52,13 @@ h2{margin:0 0 10px;font-size:18px;font-style:italic;font-weight:900;letter-spaci
 .bank button.wait{animation:blink .25s steps(1) infinite}
 @keyframes blink{50%{background:#555;color:#ddd}}
 
-/* マシン本体 */
+/* Machine panels */
 .panel{position:relative;padding:14px 22px;border-radius:3px;color:#111;min-width:0;
   background:var(--screw) 4px 4px/14px 14px no-repeat,var(--screw) right 4px top 4px/14px 14px no-repeat,
     var(--screw) left 4px bottom 4px/14px 14px no-repeat,var(--screw) right 4px bottom 4px/14px 14px no-repeat,linear-gradient(#e6e6e6,#acacac)}
 .panel .row>button{padding:5px 12px;border:1px solid #000;border-radius:3px;background:linear-gradient(#555,#222);color:#eee;font-weight:700;cursor:pointer}
 
-/* ノブ（実体は隠した range input） */
+/* Knobs (backed by a hidden range input) */
 .knob{--a:0deg;width:36px;height:36px;border-radius:50%;position:relative;cursor:ns-resize;touch-action:none;
   background:radial-gradient(circle at 35% 30%,#fff,#a8a8a8 55%,#5e5e5e);box-shadow:0 2px 3px #000,0 0 0 3px rgba(0,0,0,.18)}
 .knob::after{content:'';position:absolute;left:50%;top:10%;width:3px;height:32%;margin-left:-1.5px;border-radius:2px;background:#222;
@@ -75,7 +75,7 @@ h2{margin:0 0 10px;font-size:18px;font-style:italic;font-weight:900;letter-spaci
 .step button{padding:1px 0;font-size:8px;border:1px solid #000;background:#555;color:#ccc;border-radius:2px}
 .step button.on{background:#f33;color:#fff;box-shadow:0 0 5px #f33}
 
-/* ドラム共通 */
+/* Drums (shared) */
 .drums{overflow-x:auto}
 .drow{display:grid;grid-template-columns:28px 34px repeat(16,minmax(20px,1fr));gap:3px;align-items:center;margin-bottom:5px;min-width:560px}
 .drow b{font-size:11px}
@@ -104,12 +104,12 @@ h2{margin:0 0 10px;font-size:18px;font-style:italic;font-weight:900;letter-spaci
 .d909 .drow button:nth-of-type(4n+1){background:linear-gradient(#ffd9b0,#e8b07a)}
 .d909 .drow button.on::after{background:#ff8c1a;box-shadow:0 0 6px #ff8c1a}
 
-/* MIX 列 */
+/* MIX column */
 .mix .hdr{background:linear-gradient(#b7e05a,#86b51f);color:#1d2a08}
 .mix .row{justify-content:center;gap:8px}
 .ins{display:flex;flex-direction:column;gap:4px}
 
-/* エフェクト列 */
+/* Effects column */
 .fxcol{display:flex;flex-direction:column;gap:4px}
 .fx .hdr{background:linear-gradient(#4b8cf0,#1f5fc9);color:#fff}
 .fx.master .hdr{background:linear-gradient(#b7e05a,#86b51f);color:#1d2a08}
@@ -128,11 +128,11 @@ h2{margin:0 0 10px;font-size:18px;font-style:italic;font-weight:900;letter-spaci
     <label>SHUFFLE <input id="shuffle" type="range" min="0" max="1" step="0.01" value="0"></label>
     <button class="tp play" id="play" aria-label="play">▶</button>
     <button class="tp" id="stop" aria-label="stop">■</button>
-    <label>OUTPUT <span class="row" style="gap:6px;align-items:center"><select id="outdev" aria-label="output device"><option value="">既定の出力</option></select>
+    <label>OUTPUT <span class="row" style="gap:6px;align-items:center"><select id="outdev" aria-label="output device"><option value="">Default output</option></select>
       <button class="tog" id="multi" title="1/2 MASTER, 3/4 303#1, 5/6 303#2, 7/8 808, 9/10 909">MULTI OUT</button></span></label>
     <label>MIDI CLOCK <span class="row" style="gap:6px;align-items:center"><button class="tog" id="ext">EXT SYNC</button><span class="led-btn" id="beat" style="width:14px"></span></span></label>
-    <label>REC <span class="row" style="gap:6px;align-items:center"><button class="tog" id="rec" title="MASTER を WAV で録音">● WAV</button>
-      <button class="tog" id="vid" title="画面と MASTER の音を録画">● VIDEO</button><span class="led" id="rectime">0:00</span></span></label>
+    <label>REC <span class="row" style="gap:6px;align-items:center"><button class="tog" id="rec" title="Record MASTER to WAV">● WAV</button>
+      <button class="tog" id="vid" title="Record the screen with MASTER audio">● VIDEO</button><span class="led" id="rectime">0:00</span></span></label>
     <div class="logo">AfterBirth<small>AB-3389</small></div>
   </div>
   <div class="devs" id="devs"></div>
@@ -191,7 +191,7 @@ const $ = id => document.getElementById(id);
 const fv = id => +$(id).value;
 let ctx, playing = false;
 
-// LED の数値表示。−/+、ホイール、上下ドラッグで変更
+// LED number display. Change with −/+, mouse wheel, or vertical drag
 function numbox(el, min, max, val, onChange) {
   el.className = 'num';
   el.innerHTML = '<button aria-label="down">−</button><span class="led"></span><button aria-label="up">+</button>';
@@ -212,12 +212,12 @@ function numbox(el, min, max, val, onChange) {
   return box;
 }
 
-// パターンは localStorage に自動保存（ノブやミキサーの値は保存しない）
+// Patterns autosave to localStorage (knob and mixer values are not saved)
 const SAVED = (() => { try { return JSON.parse(localStorage.getItem('ab3389')) || {}; } catch { return {}; } })();
 const loadPats = (name, fresh) => SAVED[name]?.length === 32 ? SAVED[name] : Array.from({length: 32}, (_, k) => ({shuf: true, ...fresh(k)}));
 
-// ---------- エフェクト ----------
-// wet/dry を切り替えるだけの挿し込み口。fx は {in, out}
+// ---------- Effects ----------
+// Insert slot that just switches wet/dry. fx is {in, out}
 function stage(input, fx) {
   const dry = ctx.createGain(), wet = ctx.createGain(), out = ctx.createGain();
   input.connect(dry).connect(out);
@@ -226,7 +226,7 @@ function stage(input, fx) {
   return { out, set(on) { dry.gain.value = on ? 0 : 1; wet.gain.value = on ? 1 : 0; } };
 }
 
-// DIST / PCF / COMP はチャンネルごとに実体を持ち、ノブは全実体に効く
+// DIST / PCF / COMP have one instance per channel; the knobs drive all instances
 const FX = {
   DIST: {
     enabled: true, nodes: [],
@@ -234,7 +234,7 @@ const FX = {
       const k = 1 + fv('damt') * 50, sh = fv('dshape'), c = new Float32Array(1024);
       for (let i = 0; i < 1024; i++) {
         const x = i / 511.5 - 1;
-        c[i] = (1 - sh) * Math.tanh(k * x) / Math.tanh(k) + sh * Math.sin(k * x * Math.PI / 2); // SHAPE でソフトクリップ→ウェーブフォールド
+        c[i] = (1 - sh) * Math.tanh(k * x) / Math.tanh(k) + sh * Math.sin(k * x * Math.PI / 2); // SHAPE morphs soft clip -> wavefold
       }
       return c;
     },
@@ -260,7 +260,7 @@ const FX = {
       const thr = -fv('cthr') * 50, ratio = fv('cratio');
       this.nodes.forEach(([n, g]) => {
         n.threshold.value = thr; n.ratio.value = ratio;
-        g.gain.value = 10 ** (-thr * (1 - 1 / ratio) * 0.5 / 20); // ざっくりメイクアップ
+        g.gain.value = 10 ** (-thr * (1 - 1 / ratio) * 0.5 / 20); // rough makeup gain
       });
     },
   },
@@ -275,7 +275,7 @@ document.querySelectorAll('[data-pmode]').forEach(b => b.onclick = () => {
   FX.PCF.update();
 });
 
-// PCF：ステップごとにフィルターを開く量のパターン（1 は 4 つ打ち、2 以降は固定の乱数）
+// PCF: per-step filter open amounts (1 is four-on-the-floor, 2+ are fixed pseudo-random)
 const PCF_PATS = Array.from({length: 32}, (_, p) => Array.from({length: 16}, (_, s) => {
   if (p === 0) return s % 4 === 0 ? 1 : 0;
   const r = Math.abs(Math.sin((p + 1) * 91.7 + (s + 1) * 12.9898) * 43758.5453) % 1;
@@ -320,7 +320,7 @@ document.querySelectorAll('[data-dmode]').forEach(b => b.onclick = () => {
   document.querySelectorAll('[data-dmode]').forEach(x => x.classList.toggle('on', x === b));
 });
 
-// ステレオのノードを出力の ch, ch+1 に送る
+// Send a stereo node to output channels ch, ch+1
 function tapTo(node, ch) {
   const sp = ctx.createChannelSplitter(2);
   node.connect(sp);
@@ -331,10 +331,10 @@ function tapTo(node, ch) {
 const master = {
   init() {
     this.inp = ctx.createGain();
-    this.inp.gain.value = 0.5; // 4 台の合計で 1 を超えるので -6dB のヘッドルーム
+    this.inp.gain.value = 0.5; // -6dB headroom: the four machines together exceed 1.0
     this.comp = stage(this.inp, FX.COMP.make());
     this.lvl = ctx.createGain(); this.an = ctx.createAnalyser(); this.an.fftSize = 1024;
-    // 出力は 10ch：1/2 MASTER、3/4 以降に各マシン（MULTI OUT 時だけ 3ch 目以降が出る）
+    // 10ch output: 1/2 MASTER, 3/4 onward one pair per machine (ch 3+ only audible with MULTI OUT)
     this.merger = ctx.createChannelMerger(10);
     ctx.destination.channelInterpretation = 'discrete';
     this.merger.connect(ctx.destination);
@@ -361,7 +361,7 @@ const master = {
 };
 $('mcomp').onclick = e => { e.target.classList.toggle('on'); master.update(); };
 
-// ---------- ミキサー ----------
+// ---------- Mixer ----------
 const channels = [];
 const refresh = () => { channels.forEach(c => c.update?.()); master.update(); delay.update(); };
 document.querySelectorAll('[data-unit]').forEach(b => b.onclick = () => {
@@ -407,7 +407,7 @@ function makeChannel(el, level = 0.8) {
   return ch;
 }
 
-// 1 台分の行：パターン列 / 本体 / MIX 列
+// One machine row: pattern column / panel / MIX column
 function mountDevice(cls) {
   const row = document.createElement('div');
   row.className = 'dev';
@@ -416,7 +416,7 @@ function mountDevice(cls) {
   return [...row.children];
 }
 
-// A1〜D8 の 32 パターン。再生中の切り替えは次の小節頭で反映
+// 32 patterns A1-D8. While playing, a switch takes effect at the next bar
 function makeBank(el, pats, onChange) {
   el.innerHTML = '<div class="hdr">PATTERN</div><div class="bank">' +
     [1,2,3,4,5,6,7,8].map(n => `<button data-n="${n}">${n}</button>`).join('') +
@@ -444,7 +444,7 @@ function makeBank(el, pats, onChange) {
     else if (b.n) go((x & ~7) + +b.n - 1);
     else if ('s' in b) { bank.pat.shuf = !bank.pat.shuf; show(); }
   };
-  // 毎ステップ呼ぶ。小節頭なら予約中のパターンに切り替える
+  // Called every step. On the downbeat, switch to the queued pattern
   bank.tick = i => {
     if (i !== 0 || bank.queued === null) return;
     bank.sel = bank.queued; bank.queued = null;
@@ -524,7 +524,7 @@ function make303(name, pattern, opt = {}) {
       ch.init();
       osc = ctx.createOscillator();
       f1 = ctx.createBiquadFilter(); f1.type = 'lowpass';
-      f2 = ctx.createBiquadFilter(); f2.type = 'lowpass'; f2.Q.value = 0; // 2 段で 24dB/oct 寄りに
+      f2 = ctx.createBiquadFilter(); f2.type = 'lowpass'; f2.Q.value = 0; // two stages for a steeper, ~24dB/oct slope
       vca = ctx.createGain(); vca.gain.value = 0;
       const out = ctx.createGain(); out.gain.value = 0.4;
       osc.connect(f1).connect(f2).connect(vca).connect(out).connect(ch.inp);
@@ -568,8 +568,8 @@ function make303(name, pattern, opt = {}) {
   };
 }
 
-// ---------- ドラム（808 / 909 共通） ----------
-// voices(api) は { パート名: (t, level) => void } を返す
+// ---------- Drums (shared by 808 / 909) ----------
+// voices(api) returns { partName: (t, level) => void }
 function makeDrum(name, cls, pat, voices) {
   const [bankEl, root, mixEl] = mountDevice(cls);
   const V = Object.keys(pat);
@@ -604,7 +604,7 @@ function makeDrum(name, cls, pat, voices) {
     s.buffer = noise; fl.type = type; fl.frequency.value = f;
     s.connect(fl).connect(dest); s.start(t); s.stop(t + dur);
   };
-  // f0 から f1 へ drop 秒でピッチを落とすオシレーター
+  // Oscillator whose pitch falls from f0 to f1 over drop seconds
   const tone = (t, type, f0, f1, drop, peak, dec) => {
     const o = ctx.createOscillator();
     o.type = type;
@@ -659,7 +659,7 @@ const make808 = () => makeDrum('AB-808', 'd808',
     };
   });
 
-// デフォルトは空（808 と重ならないように）。好きに打ち込む
+// Empty by default (so it does not double the 808). Program your own
 const make909 = () => makeDrum('AB-909', 'd909',
   {BD:'................', SD:'................', LT:'................', HT:'................', RS:'................',
    CP:'................', CH:'................', OH:'................', CR:'................'},
@@ -682,7 +682,7 @@ const make909 = () => makeDrum('AB-909', 'd909',
     };
   });
 
-// ---------- 全体 ----------
+// ---------- Global ----------
 const machines = [
   make303('AB-303 #1', [[0,0,1,0],[0,1,0,0],[-1],[12,0,0,1],[3,0,0,1],[0,0,1,0],[7,-1,0,0],[-1],
     [0,0,0,1],[10,0,1,0],[0,0,0,0],[3,1,0,0],[-1],[5,0,1,1],[7,0,0,0],[0,-1,0,0]]),
@@ -708,9 +708,9 @@ async function ensureAudio() {
 }
 
 let cur = 0, nextT = 0, timer;
-// 1 ステップを時刻 t に鳴らす（内部クロックと MIDI クロックで共通）
+// Play one step at time t (shared by internal and MIDI clock)
 function playStep(i, t, d) {
-  const sh = i % 2 ? fv('shuffle') * d / 3 : 0; // 裏の16分を最大 1/3 ステップ遅らせる（最大で3連ノリ）
+  const sh = i % 2 ? fv('shuffle') * d / 3 : 0; // delay off-beat 16ths by up to 1/3 step (triplet feel at max)
   machines.forEach(m => m.play(i, t, d, sh));
   pcfStep(i, t);
   delay.setTime(d);
@@ -742,9 +742,9 @@ $('play').onclick = async () => {
 };
 $('stop').onclick = () => { if (!ext) stop(); };
 
-// ---------- 録音（WAV）と録画 ----------
-// MASTER のフェーダー後を録る。WAV は AudioWorklet で生の PCM を集めて 16bit で書き出す
-// ponytail: 録音中はメモリに溜めるだけ（10 分で 200MB 強）。長時間録るなら逐次書き出しに
+// ---------- Recording (WAV) and video ----------
+// Records MASTER post-fader. WAV collects raw PCM via AudioWorklet and writes 16-bit
+// ponytail: buffers everything in memory (~200MB per 10 min). Stream to disk for long takes
 const REC_WORKLET = `registerProcessor('rec', class extends AudioWorkletProcessor {
   process([inp]) { if (inp.length) this.port.postMessage(inp.map(c => c.slice())); return true; }
 });`;
@@ -795,7 +795,7 @@ $('rec').onclick = async () => {
     recNode = null;
   } else {
     if (!recReady) {
-      await ctx.audioWorklet.addModule('data:text/javascript,' + encodeURIComponent(REC_WORKLET)) // file:// でも読めるよう data URL;
+      await ctx.audioWorklet.addModule('data:text/javascript,' + encodeURIComponent(REC_WORKLET)); // data URL so it also loads from file://
       recReady = true;
     }
     recNode = new AudioWorkletNode(ctx, 'rec', {numberOfInputs: 1, numberOfOutputs: 0, channelCount: 2, channelCountMode: 'explicit'});
@@ -807,14 +807,14 @@ $('rec').onclick = async () => {
   recTimer();
 };
 
-// 録画はタブの画面共有 + MASTER の音。共有を止めても録画が終わる
+// Video = tab screen share + MASTER audio. Stopping the share also ends the recording
 $('vid').onclick = async () => {
   await ensureAudio();
   if (vidRec) { vidRec.stop(); return; }
   let scr;
   try {
     scr = await navigator.mediaDevices.getDisplayMedia({video: {frameRate: 30}, audio: false, preferCurrentTab: true});
-  } catch { return; } // キャンセル
+  } catch { return; } // cancelled
   const dest = ctx.createMediaStreamDestination();
   master.lvl.connect(dest);
   const type = ['video/mp4;codecs=avc1,mp4a.40.2', 'video/webm;codecs=vp9,opus', 'video/webm'].find(t => MediaRecorder.isTypeSupported(t));
@@ -836,31 +836,31 @@ $('vid').onclick = async () => {
   recTimer();
 };
 
-// ---------- 出力先と MULTI OUT（BlackHole 16ch などに出して DAW で録る） ----------
+// ---------- Output device and MULTI OUT (send to e.g. BlackHole 16ch and record in a DAW) ----------
 let multi = false;
 function applyOut() {
   if (!ctx) return;
   const n = multi ? Math.min(10, ctx.destination.maxChannelCount) : 2;
   ctx.destination.channelCount = n;
-  $('multi').textContent = multi && n < 10 ? `MULTI OUT (${n}ch のみ)` : 'MULTI OUT';
+  $('multi').textContent = multi && n < 10 ? `MULTI OUT (${n}ch only)` : 'MULTI OUT';
 }
 let devsLoaded = false;
 $('outdev').onfocus = async () => {
   if (devsLoaded) return;
   devsLoaded = true;
   let list = (await navigator.mediaDevices.enumerateDevices()).filter(d => d.kind === 'audiooutput');
-  if (list.some(d => !d.label)) { // 名前を見るにはマイク許可が要る（音は使わない）
+  if (list.some(d => !d.label)) { // device names need mic permission (audio is never used)
     try {
       (await navigator.mediaDevices.getUserMedia({audio: true})).getTracks().forEach(t => t.stop());
       list = (await navigator.mediaDevices.enumerateDevices()).filter(d => d.kind === 'audiooutput');
     } catch {}
   }
-  $('outdev').innerHTML = '<option value="">既定の出力</option>' +
-    list.filter(d => d.deviceId !== 'default').map((d, i) => `<option value="${d.deviceId}">${d.label || '出力 ' + (i + 1)}</option>`).join('');
+  $('outdev').innerHTML = '<option value="">Default output</option>' +
+    list.filter(d => d.deviceId !== 'default').map((d, i) => `<option value="${d.deviceId}">${d.label || 'Output ' + (i + 1)}</option>`).join('');
 };
 $('outdev').onchange = async e => {
   await ensureAudio();
-  if (!ctx.setSinkId) { e.target.title = 'このブラウザは出力先の切り替えに非対応'; return; }
+  if (!ctx.setSinkId) { e.target.title = 'This browser cannot switch output devices'; return; }
   await ctx.setSinkId(e.target.value);
   applyOut();
 };
@@ -871,8 +871,8 @@ $('multi').onclick = async () => {
   applyOut();
 };
 
-// ---------- MIDI クロック同期（Live などから受ける。24ppqn なので 16 分 1 つ = 6 クロック） ----------
-// ponytail: 受信から一定の遅れで鳴らすだけ。ずれは Live 側の「MIDI Clock Sync Delay」で詰める
+// ---------- MIDI clock sync (follow Live etc. 24ppqn, so one 16th = 6 clocks) ----------
+// ponytail: fixed latency after receipt. Trim drift with Live's "MIDI Clock Sync Delay"
 const MIDI_LAT = 0.05;
 let ext = false, midi, clocks = 0, lastClock = -Infinity, clockMs = 0;
 function onMidi(e) {
@@ -881,7 +881,7 @@ function onMidi(e) {
   if (st === 0xFA) { stop(); cur = 0; clocks = 0; start(); }      // Start
   else if (st === 0xFB) { clocks = 0; start(); }                  // Continue
   else if (st === 0xFC) stop();                                   // Stop
-  else if (st === 0xF2) { cur = (a | b << 7) % 16; clocks = 0; }  // Song Position（16 分単位）
+  else if (st === 0xF2) { cur = (a | b << 7) % 16; clocks = 0; }  // Song Position (in 16ths)
   else if (st === 0xF8) {                                         // Clock
     const dt = e.timeStamp - lastClock;
     lastClock = e.timeStamp;
@@ -896,10 +896,10 @@ function onMidi(e) {
   }
 }
 $('ext').onclick = async () => {
-  if (!navigator.requestMIDIAccess) { $('ext').textContent = 'MIDI 非対応'; return; }
+  if (!navigator.requestMIDIAccess) { $('ext').textContent = 'NO MIDI'; return; }
   await ensureAudio();
   if (!midi) {
-    try { midi = await navigator.requestMIDIAccess(); } catch { $('ext').textContent = 'MIDI 拒否'; return; }
+    try { midi = await navigator.requestMIDIAccess(); } catch { $('ext').textContent = 'MIDI DENIED'; return; }
     const hook = () => midi.inputs.forEach(i => { i.onmidimessage = onMidi; });
     hook();
     midi.onstatechange = hook;
@@ -907,10 +907,10 @@ $('ext').onclick = async () => {
   stop();
   ext = !ext;
   $('ext').classList.toggle('on', ext);
-  $('ext').title = [...midi.inputs.values()].map(i => i.name).join(', ') || '入力ポートなし';
+  $('ext').title = [...midi.inputs.values()].map(i => i.name).join(', ') || 'No input ports';
 };
 
-// range input をロータリーノブに置き換える（値は隠した input が持つので他のコードはそのまま）
+// Replace range inputs with rotary knobs (the hidden input keeps the value, so other code is unchanged)
 document.querySelectorAll('input[type=range]:not(.fader)').forEach(inp => {
   const k = document.createElement('div'), min = +inp.min, max = +inp.max;
   k.className = 'knob'; k.tabIndex = 0; k.setAttribute('role', 'slider');
