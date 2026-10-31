@@ -25,7 +25,7 @@ Press ▶ to start (browsers keep audio suspended until the first click). Chrome
 |---|---|
 | **AB-303 #1 / #2** | ENGINE (WASM / JS / CLASSIC), FILTER (DIODE / LADDER), MODS (see below), SAW / SQUARE, TUNE / CUTOFF / RESO / ENV MOD / DECAY / ACCENT. 16 steps with note, UP / DN, ACC (accent) and SLD (slide) |
 | **AB-808** | BD / SD / CH / OH / CP. Fully synthesized; CH chokes OH |
-| **AB-909** | BD / SD / LT / HT / RS / CP / CH / OH / CR |
+| **AB-909** | BD / SD / LT / MT / HT / RS / CP / CH / OH / CR / RD, with the original's knobs (BD TUNE / ATTACK / DECAY, SD TUNE / TONE / SNAPPY, tom TUNE / DECAY, hat DECAY, cymbal TUNE). AC row = accent steps (its knob sets the amount), FL row = flam steps (its knob sets the flam time). STEPS sets the pattern length (1–16); shorter patterns loop on their own against the other machines |
 | **PATTERN** | 32 patterns per machine (1-8 × A-D). Switching while playing waits for the next bar. SHUFFLE on/off per pattern |
 | **SONG** | Pattern chain as text, one row per line: one slot per machine (303#1 303#2 808 909, `-` keeps) and `xN` bars; a line `END` stops the song (and any running recording) instead of looping. ● AUTO records knob moves while the song plays (latched per knob). ACID TRIP loads a ~6 minute Hardfloor-style acid track into bank D |
 | **MIX** | Mute, PAN, DELAY send, fader, DIST / PCF / COMP inserts |
