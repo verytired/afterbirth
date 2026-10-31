@@ -2,6 +2,8 @@
 
 ブラウザで動くアシッド・グルーヴボックス。TB-303 系ベースライン × 2、808 系 / 909 系ドラムマシン、ミキサー、エフェクトを Web Audio API だけで鳴らします。外部ライブラリなし、`index.html` 1 ファイル。
 
+**▶ ブラウザで遊ぶ: https://verytired.github.io/afterbirth/**
+
 ![screenshot](docs/screenshot.png)
 
 ## 起動
@@ -59,6 +61,10 @@ open index.html   # またはブラウザにドラッグ
 4. Live の入力デバイスを BlackHole 16ch にし、各トラックの入力を Ext. In 3/4 … に割り当てて録音
 
 各マシンの個別出力はフェーダーとインサート（DIST / PCF / COMP）の後。DELAY とマスター COMP は 1/2 にだけ乗ります。出力先の切り替えは Chrome / Edge のみ対応。
+
+## ライセンス
+
+[MIT](LICENSE)
 
 ## 免責
 
