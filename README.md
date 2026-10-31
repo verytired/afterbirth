@@ -68,6 +68,8 @@ A second row of controls inspired by the Devil Fish modification of the TB-303 (
 | **SELF OSC** | Lets RESO push the filter into self-oscillation (use TRACK to play it in tune) |
 | **DBS A / B** | Dynamic Bank Switching: while the chosen drum part hits on a step, or while the button is held, that step is read from the pattern with bit A / B of its number flipped (A1 ↔ A2 / A3) |
 
+**SAVE / LOAD** (in the SONG box) write and read a song file (`.song.json`): every pattern of every machine, the song and its knob automation, tempo, every knob and selector (including MODS, ENGINE, FILTER, mixer and effects) and the toggle buttons. Loading replaces the current state. The output device is not stored, since it belongs to the computer.
+
 Any song row's `# comment` is shown as a caption in the top bar while that row plays.
 
 The stock panel also gets the Devil Fish ranges: **ENV MOD** goes to 3× the stock maximum, and **DECAY** stretches from 15 ms to 3 s with the far right position holding the filter open. Both keep their stock sound at the default position.

@@ -10,6 +10,7 @@ import { onMidi, wireMidi } from './midi';
 import { wireRecording } from './record';
 import { wireOutput } from './output';
 import { song, wireSong } from './song';
+import { wireSongFile } from './songfile';
 import { wirePreset } from './preset';
 
 machines.push(
@@ -29,6 +30,7 @@ wireMidi();
 wireRecording();
 wireOutput();
 wireSong(); // after knobify
+wireSongFile();
 wirePreset();
 document.addEventListener('click', save);
 document.addEventListener('change', save);

@@ -276,3 +276,48 @@ test('AUTO records knob moves into the song and plays them back', async ({ page 
   expect(+await page.inputValue(knob)).toBeCloseTo(0.9, 3);
   expect(await page.evaluate(() => JSON.parse(localStorage.getItem('ab3389-song')!).auto[5]['0:cutoff'])).toBeCloseTo(0.9, 3);
 });
+
+test('song files round-trip every pattern, control, toggle and the song into a fresh browser', async ({ page, browser }) => {
+  const d1 = '#devs .dev:nth-child(1)', d2 = '#devs .dev:nth-child(2)', d3 = '#devs .dev:nth-child(3)';
+  const setCtl = (sel: string, v: string) => page.evaluate(([sel, v]) => {
+    const el = document.querySelector<HTMLInputElement | HTMLSelectElement>(sel)!;
+    el.value = v; el.dispatchEvent(new Event('input'));
+  }, [sel, v]);
+  await page.click(`${d1} [data-a=rand]`);
+  await page.click(`${d3} .drow button[data-r="1"][data-c="3"]`); // an 808 SD hit
+  await setCtl(`${d1} [name=drive]`, '0.5');
+  await setCtl(`${d1} [name=muffler]`, '2');
+  await setCtl(`${d2} [name=selfosc]`, '1');
+  await setCtl(`${d2} [name=engine]`, 'js');
+  await setCtl('#dfb', '0.7');
+  await page.click(`${d3} [data-mute]`);
+  await page.click(`${d2} [data-fx=DIST]`);
+  await page.click('[data-pmode=bandpass]');
+  await page.fill('#songtext', 'A1 A1 A1 A1 x2  # first\nB1 - - - x2\nEND');
+  await page.click('#songon');
+
+  const state = (p: typeof page) => p.evaluate(() => ({
+    pats: JSON.stringify(window.ab.machines.map(m => m.pats)),
+    ctl: [...document.querySelectorAll<HTMLInputElement | HTMLSelectElement>('.rack input[type=range], .rack select')].map(e => e.value).join('|'),
+    tog: [...document.querySelectorAll('[data-mute], [data-fx], [data-unit], #mcomp, [data-pmode], [data-dmode], #songon')].map(b => b.classList.contains('on')).join(''),
+    song: (document.getElementById('songtext') as HTMLTextAreaElement).value,
+    tempo: window.ab.tempo.value,
+  }));
+  const before = await state(page);
+  const [dl] = await Promise.all([page.waitForEvent('download'), page.click('#songsave')]);
+  expect(dl.suggestedFilename()).toMatch(/\.song\.json$/);
+
+  const fresh = await (await browser.newContext()).newPage(); // separate storage: nothing carried over
+  await fresh.goto(page.url());
+  expect((await state(fresh)).pats).not.toBe(before.pats);
+  await fresh.setInputFiles('#songfile', (await dl.path())!);
+  await expect(fresh.locator('#songcap')).toHaveText(/^loaded /);
+  expect(await state(fresh)).toEqual(before);
+});
+
+test('loading a file that is not a song reports it and changes nothing', async ({ page }) => {
+  const before = await page.evaluate(() => JSON.stringify(window.ab.machines.map(m => m.pats)));
+  await page.setInputFiles('#songfile', { name: 'x.json', mimeType: 'application/json', buffer: Buffer.from('{"hello":1}') });
+  await expect(page.locator('#songcap')).toHaveText('LOAD FAILED: not an AfterBirth song file');
+  expect(await page.evaluate(() => JSON.stringify(window.ab.machines.map(m => m.pats)))).toBe(before);
+});
