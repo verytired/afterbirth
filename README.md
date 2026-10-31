@@ -137,6 +137,7 @@ From **REC** in the top bar.
 | `npm test` | Unit tests (Vitest): helpers in `src/lib.ts`, and the 303 engine (determinism, stability at max settings, WASM output matching JS) |
 | `npm run e2e` | Builds, then drives the production build in Chrome with Playwright: playback level, pattern banks, MIDI clock, WAV and stem export (stems must sum back to MASTER), engine switching, fallback to JS when the WASM file is blocked |
 | `npm run check` | All of the above |
+| `node scripts/record-demo.mjs <song> <out.mp4> <url>` | Records a bundled song with the app's VIDEO recorder (1080p, MASTER audio) against a built app (`npm run build && npx vite preview`) |
 
 Code lives in `src/`: `tb303.ts` and `drums.ts` (machines), `dsp/` (303 voice engine and its AudioWorklet), `audio.ts` (effects, master, mixer), `transport.ts`, `midi.ts`, `record.ts`, `output.ts`, wired together in `main.ts`. The AssemblyScript port of the engine is in `assembly/`; `npm run dev`, `build` and `test` compile it to `src/dsp/voice.wasm` first.
 
