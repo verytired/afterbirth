@@ -6,7 +6,6 @@ import { song, applyAuto, saveSong, setSongOn, setSongText, type Auto } from './
 import { parse303, parseSong, songBars, lerpKeys } from './lib';
 import type { Pat } from './rack';
 
-const D = (n: number) => 24 + n - 1; // slot index of D1-D8; D8 stays empty (= silent)
 const EMPTY303 = Array(16).fill('-').join(' ');
 const P303: string[][] = [
   [ // #1
@@ -63,7 +62,8 @@ D8 D8 D8 D8 x2    # delay tail
 END
 `;
 // Knob rides as [bar, value] keyframes; wob adds a slow sine (amount, period in bars)
-const RIDES: { key: string; keys: [number, number][]; wob?: [number, number] }[] = [
+export interface Ride { key: string; keys: [number, number][]; wob?: [number, number] }
+const RIDES: Ride[] = [
   { key: '0:cutoff', wob: [.07, 6], keys: [[0, .05], [4, .08], [16, .12], [32, .35], [48, .45], [64, .5], [80, .45], [81, .2], [87, .72], [88, .5],
     [104, .45], [120, .5], [121, .15], [135, .85], [136, .6], [152, .62], [168, .55], [176, .4], [184, .12], [188, .05]] },
   { key: '0:reso', keys: [[0, 12], [80, 13], [87, 18], [88, 15], [120, 15], [135, 20], [136, 17], [168, 16], [190, 12]] },
@@ -78,34 +78,42 @@ const RIDES: { key: string; keys: [number, number][]; wob?: [number, number] }[]
   { key: 'dfb', keys: [[0, .45]] },
 ];
 
+// A song preset: 303 patterns as text and drum parts per slot, written into one bank (slots bank*8 .. +7;
+// missing slots are left empty), plus the song text and knob rides turned into automation
+export interface SongPreset { bank: number; p303: string[][]; drums: Record<string, string>[][]; song: string; rides: Ride[]; bpm: number }
+
+export function installPreset(p: SongPreset) {
+  stop();
+  machines.forEach((m, k) => {
+    for (let n = 1; n <= 8; n++) {
+      const pat = m.pats[p.bank * 8 + n - 1] as Pat & { steps?: object[]; grid?: boolean[][] };
+      if (pat.steps) parse303(p.p303[k]?.[n - 1] ?? EMPTY303).forEach((s, i) => Object.assign(pat.steps![i], s));
+      else pat.grid!.forEach((row, r) => {
+        const src = p.drums[k - 2]?.[n - 1]?.[m.parts![r]] ?? '';
+        row.forEach((_, c) => { row[c] = src[c] === 'x'; });
+      });
+      pat.shuf = false;
+    }
+  });
+  const bars = songBars(parseSong(p.song)), auto: Auto = {};
+  for (let s = 0; s < bars * 16; s += 2) // every 8th note is smooth enough
+    for (const r of p.rides) {
+      if (s && r.keys.length === 1) continue;
+      const b = s / 16, w = r.wob ? r.wob[0] * Math.sin(2 * Math.PI * b / r.wob[1]) : 0;
+      (auto[s] ??= {})[r.key] = Math.round((lerpKeys(r.keys, b) + w) * 1000) / 1000;
+    }
+  song.auto = auto;
+  setSongText(p.song);
+  setSongOn(true);
+  tempo.set(p.bpm);
+  applyAuto(0);
+  song.rows[0].slots.forEach((x, k) => machines[k].bank.set(x));
+  save(); saveSong();
+}
+
 export function wirePreset() {
   $('preset').onclick = () => {
     if (!confirm('Load ACID TRIP? This overwrites bank D of every machine, the song and its automation.')) return;
-    stop();
-    machines.forEach((m, k) => {
-      for (let n = 1; n <= 8; n++) {
-        const p = m.pats[D(n)] as Pat & { steps?: object[]; grid?: boolean[][] };
-        if (p.steps) parse303(P303[k]?.[n - 1] ?? EMPTY303).forEach((s, i) => Object.assign(p.steps![i], s));
-        else p.grid!.forEach((row, r) => {
-          const src = DRUMS[k - 2]?.[n - 1]?.[m.parts![r]] ?? '';
-          row.forEach((_, c) => { row[c] = src[c] === 'x'; });
-        });
-        p.shuf = false;
-      }
-    });
-    const bars = songBars(parseSong(SONG)), auto: Auto = {};
-    for (let s = 0; s < bars * 16; s += 2) // every 8th note is smooth enough
-      for (const r of RIDES) {
-        if (s && r.keys.length === 1) continue;
-        const b = s / 16, w = r.wob ? r.wob[0] * Math.sin(2 * Math.PI * b / r.wob[1]) : 0;
-        (auto[s] ??= {})[r.key] = Math.round((lerpKeys(r.keys, b) + w) * 1000) / 1000;
-      }
-    song.auto = auto;
-    setSongText(SONG);
-    setSongOn(true);
-    tempo.set(130);
-    applyAuto(0);
-    song.rows[0].slots.forEach((x, k) => machines[k].bank.set(x));
-    save(); saveSong();
+    installPreset({ bank: 3, p303: P303, drums: DRUMS, song: SONG, rides: RIDES, bpm: 130 });
   };
 }

@@ -233,6 +233,16 @@ test('DEMO scenes set up the MODS and STOCK restores the startup controls', asyn
     await expect(page.locator(sel)).toHaveValue(v);
 });
 
+test('MODS TOUR loads into bank C and starts playing with a caption', async ({ page }) => {
+  await page.click('#tour'); // bank C is empty in a fresh profile, so no confirm
+  await expect(page.locator('#play')).toHaveClass(/on/);
+  await expect(page.locator('#songcap')).toHaveText('AB-303 STOCK');
+  await expect(page.locator('#devs .dev:nth-child(2) [name=selfosc]')).toHaveValue('1');
+  await expect(page.locator('#devs .dev:nth-child(1) [name=dbsA]')).toHaveValue('2:BD');
+  expect(await page.evaluate(() => window.ab.tempo.value)).toBe(130);
+  expect(await masterPeak(page, 1500)).toBeGreaterThan(0.2);
+});
+
 test('303 runs on the WASM engine and can switch engines while playing', async ({ page }) => {
   await play(page);
   await expect(page.locator(engine303)).toHaveValue('wasm');

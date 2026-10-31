@@ -33,11 +33,16 @@ const SCENES: Record<string, () => void> = {
   },
 };
 
+// Every 303 control back to its startup value
+export function resetControls() {
+  for (const [el, v] of startup) { el.value = v; el.dispatchEvent(new Event('input')); }
+}
+
 export function wireDemo() {
   startup = new Map(controls().map(el => [el, el.value]));
   const sel = $<HTMLSelectElement>('demo');
   sel.onchange = () => {
-    for (const [el, v] of startup) { el.value = v; el.dispatchEvent(new Event('input')); }
+    resetControls();
     SCENES[sel.value]?.();
     save();
   };

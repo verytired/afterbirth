@@ -89,6 +89,21 @@ export function parseSong(text: string): SongRow[] {
 }
 export const songEnds = (text: string) => /^\s*end\s*(#.*)?$/im.test(text);
 export const songBars = (rows: SongRow[]) => rows.reduce((a, r) => a + r.bars, 0);
+// Comment of each song row, in parseSong order, for on-screen captions
+export function songCaptions(text: string): string[] {
+  return text.split('\n')
+    .filter(l => { const c = l.replace(/#.*/, '').trim(); return c && !/^end$/i.test(c); })
+    .map(l => (/#(.*)/.exec(l)?.[1] ?? '').trim());
+}
+// Index of the row playing at bar (the song loops), or -1 for an empty song
+export function songRowIndexAt(rows: SongRow[], bar: number): number {
+  const total = songBars(rows);
+  if (!total) return -1;
+  let b = bar % total;
+  for (let i = 0; i < rows.length; i++) { if (b < rows[i].bars) return i; b -= rows[i].bars; }
+  return -1;
+}
+
 // Slots for bar (the song loops), or null for an empty song
 export function songRowAt(rows: SongRow[], bar: number): number[] | null {
   const total = songBars(rows);

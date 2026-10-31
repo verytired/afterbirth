@@ -2,7 +2,7 @@
 import { $ } from './dom';
 import { playing } from './state';
 import { machines } from './rack';
-import { parseSong, songBars, songEnds, songRowAt, type SongRow } from './lib';
+import { parseSong, songBars, songCaptions, songEnds, songRowAt, songRowIndexAt, type SongRow } from './lib';
 
 export type Auto = Record<number, Record<string, number>>;
 export const song = { on: false, rec: false, text: '', rows: [] as SongRow[], auto: {} as Auto };
@@ -48,6 +48,7 @@ export function songStep(i: number): boolean {
     });
     const total = songBars(song.rows);
     $('songpos').textContent = total ? `${bar % total + 1}/${total}` : String(bar + 1);
+    $('songcap').textContent = songCaptions(song.text)[songRowIndexAt(song.rows, bar)] ?? ''; // the row's # comment
   }
   if (bar < 0) return false; // started mid-bar
   const total = songBars(song.rows), s = (total ? bar % total : bar) * 16 + i;

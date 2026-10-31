@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { wav, crc32, zip, PCF_PATS, shuffleOffset, slotBank, slotNum, withBank, withNum, stemName, parseSong, songBars, songRowAt, songEnds, parse303, lerpKeys } from './lib';
+import { wav, crc32, zip, PCF_PATS, shuffleOffset, slotBank, slotNum, withBank, withNum, stemName, parseSong, songBars, songRowAt, songEnds, songCaptions, songRowIndexAt, parse303, lerpKeys } from './lib';
 
 describe('wav', () => {
   it('writes a 16-bit stereo header and interleaved, clamped samples', () => {
@@ -97,6 +97,9 @@ describe('song', () => {
     expect(songRowAt(rows, 4)).toEqual([18]);
     expect(songRowAt(rows, 6)).toEqual(rows[0].slots);
     expect(songRowAt([], 0)).toBeNull();
+    expect(songCaptions('# header\nA1 D8 - b2 x4  # intro\n\nC3 x2\nEND\n')).toEqual(['intro', '']);
+    expect([0, 3, 4, 5, 6].map(b => songRowIndexAt(rows, b))).toEqual([0, 0, 1, 1, 0]);
+    expect(songRowIndexAt([], 0)).toBe(-1);
     expect([songEnds('A1 x2\n end # stop'), songEnds('A1 x2')]).toEqual([true, false]);
   });
   it('parses 303 steps', () => {
