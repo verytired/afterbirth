@@ -7,11 +7,11 @@
     "dev": "npm run asbuild && vite",
     "build": "npm run asbuild && vite build",
     "preview": "vite preview",
-    "typecheck": "tsc --noEmit && asc assembly/index.ts --noEmit",
+    "typecheck": "tsc --noEmit && asc assembly/index.ts --noEmit && asc assembly/tr909.ts --noEmit",
     "test": "npm run asbuild && vitest run",
     "e2e": "playwright test",
     "check": "npm run typecheck && npm test && npm run build && npm run e2e",
-    "asbuild": "asc assembly/index.ts -o src/dsp/voice.wasm --runtime stub -O3 --initialMemory 1 --maximumMemory 1"
+    "asbuild": "asc assembly/index.ts -o src/dsp/voice.wasm --runtime stub -O3 --initialMemory 1 --maximumMemory 1 && asc assembly/tr909.ts -o src/dsp/tr909.wasm --runtime stub --use abort= -O3 --initialMemory 2 --maximumMemory 2"
   },
   "devDependencies": {
     "@playwright/test": "^1.64.1",
