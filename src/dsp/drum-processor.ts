@@ -63,7 +63,7 @@ class DrumProcessor extends AudioWorkletProcessor {
   }
 
   private hit(m: Hit) {
-    for (const c of recipe(m.v, m.l, m.p)) {
+    for (const c of recipe(m.v, m.l, m.p, m.a)) {
       if (c.group) this.engine.choke(c.group);
       this.engine.add(c.kind, c.delay, c.dur, c.wave, c.f0, c.f1, c.glide, c.ft, c.ff, c.fq, c.lp, c.rom, c.rate, c.env, c.peak, c.dec, c.group);
     }

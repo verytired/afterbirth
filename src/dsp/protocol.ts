@@ -15,6 +15,6 @@ export type ProcessorMsg =
   | { k: 'error'; msg: string };
 
 export type DrumMsg =
-  | { k: 'hit'; t: number; v: Voice909; l: number; p: number[] } // p: the voice's KNOBS values
+  | { k: 'hit'; t: number; v: Voice909; l: number; a: number; p: number[] } // a: accent amount, p: the voice's KNOBS values
   | { k: 'flush' }
   | { k: 'engine'; name: EngineName };

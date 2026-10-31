@@ -45,12 +45,13 @@ const noise = (ft: number, ff: number, dur: number, peak: number, dec: number, m
 const pcm = (rom: number, rate: number, peak: number, dec: number, group = 0) =>
   comp({ kind: K_PCM, rom, rate, peak, dec, dur: dec, group });
 
-// A hit at level l (accent already applied) with the voice's KNOBS values p
-export function recipe(v: Voice909, l: number, p: number[]): Comp[] {
+// A hit at level l (accent already applied) with the voice's KNOBS values p; a = accent amount (0 = none)
+export function recipe(v: Voice909, l: number, p: number[], a = 0): Comp[] {
   switch (v) {
     case 'BD': { // near-sine with a pitch dive (time constant = TUNE), click of pulse + lowpassed noise (ATTACK)
       // Rest pitch about 56 Hz, set by R27 to +15 V on the original (circuit notes in HelveticaScenario/operator#169)
-      const d = 0.15 + 1.05 * p[2], atk = p[1];
+      // Accent also stretches the amp decay (on the original it changes EG1's level and decay; Sound On Sound)
+      const d = (0.15 + 1.05 * p[2]) * (1 + 0.4 * a), atk = p[1];
       return [osc(246, 56, -(0.008 + 0.06 * p[0]), l, d), osc(1000, 1000, 0.001, l * 0.3 * atk, 0.002, W_SQUARE),
         noise(F_LP, 3000, 0.02, l * 0.5 * atk, 0.015)];
     }

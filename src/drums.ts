@@ -7,7 +7,7 @@ import { loadDrums } from './dsp/load';
 import { KNOBS, VOICES, makeRom } from './dsp/tr909';
 import type { DrumMsg, EngineName, ProcessorMsg } from './dsp/protocol';
 
-type Hit = (t: number, level: number) => void;
+type Hit = (t: number, level: number, accent: number) => void; // accent: AC amount on accented steps, else 0
 interface VoiceApi {
   env(t: number, peak: number, dec: number): GainNode;
   nz(t: number, dur: number, type: BiquadFilterType, f: number, dest: AudioNode): void;
@@ -120,12 +120,12 @@ function makeDrum(name: string, cls: string, pat: Record<string, string>, voices
       const p = at[i] = pos(i);
       cnt++;
       if (bank.pat.shuf) t += sh;
-      const acc = R('AC')?.[p] ? 1 + 0.6 * lv('AC') : 1, flam = R('FL')?.[p] ? 0.004 + 0.04 * lv('FL') : 0;
+      const ac = R('AC')?.[p] ? lv('AC') : 0, acc = 1 + 0.6 * ac, flam = R('FL')?.[p] ? 0.004 + 0.04 * lv('FL') : 0;
       V.forEach((k, r) => {
         if (!grid[r][p] || !hit[k]) return;
         const fl = opt.flam?.includes(k) ? flam : 0;
-        if (fl) hit[k](t, lv(k) * acc * 0.5);
-        hit[k](t + fl, lv(k) * acc);
+        if (fl) hit[k](t, lv(k) * acc * 0.5, ac);
+        hit[k](t + fl, lv(k) * acc, ac);
       });
     },
     stop() { bank.tick(0); cnt = 0; },
@@ -159,7 +159,7 @@ export const make909 = () => {
       CP: '................', CH: '................', OH: '................', CR: '................',
       MT: '................', RD: '................', AC: '................', FL: '................',
     },
-    ({ kv }) => Object.fromEntries(VOICES.map(v => [v, (t: number, l: number) => send({ k: 'hit', t, v, l, p: KNOBS[v].map(kv) })])),
+    ({ kv }) => Object.fromEntries(VOICES.map(v => [v, (t: number, l: number, a: number) => send({ k: 'hit', t, v, l, a, p: KNOBS[v].map(kv) })])),
     {
       order: ['BD', 'SD', 'LT', 'MT', 'HT', 'RS', 'CP', 'CH', 'OH', 'CR', 'RD', 'AC', 'FL'],
       flam: ['BD', 'SD', 'LT', 'MT', 'HT'],
