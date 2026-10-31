@@ -4,7 +4,7 @@ An acid groovebox that runs in the browser: two TB-303-style bass lines, 808-, 9
 
 **▶ Play in your browser: https://verytired.github.io/afterbirth/**
 
-**🎬 Demo:** the ACID TRIP song preset, start to finish — [watch on YouTube](https://www.youtube.com/watch?v=M-HQHGlID6c)
+**🎬 Demo:** the ACID TRIP song ([`acid-trip.song.json`](public/songs/acid-trip.song.json)), start to finish — [watch on YouTube](https://www.youtube.com/watch?v=M-HQHGlID6c)
 
 [![ACID TRIP demo](https://img.youtube.com/vi/M-HQHGlID6c/hqdefault.jpg)](https://www.youtube.com/watch?v=M-HQHGlID6c)
 
@@ -28,7 +28,7 @@ Press ▶ to start (browsers keep audio suspended until the first click). Chrome
 | **AB-909** | BD / SD / LT / MT / HT / RS / CP / CH / OH / CR / RD, with the original's knobs (BD TUNE / ATTACK / DECAY, SD TUNE / TONE / SNAPPY, tom TUNE / DECAY, hat TUNE / DECAY, cymbal TUNE; hat TUNE is an extension, as on the TR-8S). AC row = accent steps (its knob sets the amount), FL row = flam steps (its knob sets the flam time). STEPS sets the pattern length (1–16); shorter patterns loop on their own against the other machines |
 | **AB-606** | AC (accent for the whole step) / BD / SD / LT / HT / CY / CH / OH. Modeled on the TR-606 circuit (bridged-T drums, six-square metal for hats and cymbal, CH cuts OH, OH decay follows the tempo); runs on a WASM engine (`assembly/tr606.ts`, JS twin `src/dsp/tr606.ts` as fallback, kept in sync by a unit test) |
 | **PATTERN** | 32 patterns per machine (1-8 × A-D). Switching while playing waits for the next bar. SHUFFLE on/off per pattern |
-| **SONG** | Pattern chain as text, one row per line: one slot per machine (303#1 303#2 808 909 606, `-` keeps; a missing slot keeps too) and `xN` bars; a line `END` stops the song (and any running recording) instead of looping. ● AUTO records knob moves while the song plays (latched per knob). ACID TRIP loads a ~6 minute Hardfloor-style acid track into bank D |
+| **SONG** | Pattern chain as text, one row per line: one slot per machine (303#1 303#2 808 909 606, `-` keeps; a missing slot keeps too) and `xN` bars; a line `END` stops the song (and any running recording) instead of looping. ● AUTO records knob moves while the song plays (latched per knob). |
 | **MIX** | Mute, PAN, DELAY send, fader, DIST / PCF / COMP inserts |
 | **MASTER** | Meter, master fader, master COMP |
 | **PCF** | Pattern-controlled filter. 32 patterns, LP / BP, FREQ / Q / AMT / DEC |
@@ -75,6 +75,7 @@ Bundled songs live in `public/songs/` (download them from the [repository](publi
 
 | Song | |
 |---|---|
+| [`acid-trip.song.json`](public/songs/acid-trip.song.json) | A ~6 minute early-90s acid track at 130 BPM in the Hardfloor vein: two 303s with long filter rides and delay throws in the breaks, 808 claps and a 909. Uses bank D. Built by `scripts/acid-trip.mjs` |
 | [`devil-fish.song.json`](public/songs/devil-fish.song.json) | A 2:40 acid track at 136 BPM made only with the Devil Fish style MODS: overdriven and muffled bassline with extended env mod, filter FM and DBS from the open hats, and a self-oscillating lead played by the filter. Built by `scripts/devil-fish.mjs` |
 
 Any song row's `# comment` is shown as a caption in the top bar while that row plays.

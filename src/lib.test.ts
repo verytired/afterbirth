@@ -135,7 +135,9 @@ describe('bundled songs (public/songs)', () => {
   for (const name of readdirSync(dir).filter(n => n.endsWith('.song.json'))) {
     it(`${name} is a valid song file`, () => {
       const f = checkSongFile(JSON.parse(readFileSync(new URL(name, dir), 'utf8')));
-      expect(Object.keys(f.patterns)).toEqual(['AB-303 #1', 'AB-303 #2', 'AB-808', 'AB-909']);
+      const keys = Object.keys(f.patterns); // files saved before the 606 existed have four machines
+      expect(['AB-303 #1', 'AB-303 #2', 'AB-808', 'AB-909', 'AB-606'].slice(0, keys.length)).toEqual(keys);
+      expect(keys.length).toBeGreaterThanOrEqual(4);
       for (const p of Object.values(f.patterns)) expect(p).toHaveLength(32);
       expect(songBars(parseSong(f.song.text))).toBeGreaterThan(0);
       expect(songEnds(f.song.text)).toBe(true);
