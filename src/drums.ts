@@ -144,12 +144,11 @@ export const make808 = () => makeDrum('AB-808', 'd808',
 
 // Empty by default (so it does not double the 808). Program your own.
 // Grid rows keep the original part order (saved patterns are positional); the panel shows the 909's order.
-// Voice structure follows the published descriptions of the 909: BD = sawtooth through a waveshaper (near sine)
-// with a pitch envelope whose decay is TUNE, plus a click of pulse + lowpassed noise; CP = bandpassed noise hit
+// Voice structure follows the published descriptions of the 909: BD = near-sine (the original shapes a sawtooth;
+// a band-limited saw through a sine shaper buzzes, so this starts from a sine) with a pitch envelope whose decay is TUNE, plus a click of pulse + lowpassed noise; CP = bandpassed noise hit
 // four times ~11ms apart plus a reverb-like tail; hats and cymbals = 6-bit ~18kHz PCM played through analog
 // envelopes (TUNE = playback rate). Flam only applies to BD, SD and the toms, as on the original
 const tuned = (v: number, oct: number) => 2 ** ((v - 0.5) * oct);
-const SINE = new Float32Array(257).map((_, i) => Math.sin(Math.PI * (i / 128 - 1)));
 const PCM_RATE = 18000;
 // One RBJ highpass section
 const hipass = (f: number, fs: number) => {
@@ -202,11 +201,10 @@ export const make909 = () => makeDrum('AB-909', 'd909',
     const ping = (t: number, f: number, peak: number, dec: number) => nz(t, 0.001, 'bandpass', f, env(t, peak, dec), undefined, 30);
     return {
       BD: (t, l) => {
-        const dec = 0.15 + 1.05 * kv('BDdec'), o = ctx.createOscillator(), w = ctx.createWaveShaper();
-        o.type = 'sawtooth'; w.curve = SINE;
+        const dec = 0.15 + 1.05 * kv('BDdec'), o = ctx.createOscillator();
         o.frequency.setValueAtTime(220, t);
         o.frequency.setTargetAtTime(50, t, 0.008 + 0.06 * kv('BDtune'));
-        o.connect(w).connect(env(t, l, dec)); o.start(t); o.stop(t + dec);
+        o.connect(env(t, l, dec)); o.start(t); o.stop(t + dec);
         const atk = kv('BDatk');
         tone(t, 'square', 1000, 1000, 0.001, l * 0.3 * atk, 0.002);
         nz(t, 0.02, 'lowpass', 3000, env(t, l * 0.5 * atk, 0.015));
