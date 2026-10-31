@@ -2,7 +2,10 @@ import { ctx } from './state';
 import { Channel } from './audio';
 import { loadPats, makeBank, mountDevice, type Machine, type Pat } from './rack';
 import { loadVoice } from './dsp/load';
-import { P_ACCENT, P_CUTOFF, P_DECAY, P_ENV, P_FILTER, P_RESO, P_WAVE, decayTau } from './dsp/engine';
+import {
+  P_ACCENT, P_CUTOFF, P_DECAY, P_ENV, P_FILTER, P_RESO, P_WAVE, decayTau,
+  P_ACC_DECAY, P_VEG_DECAY, P_SOFT_ATTACK, P_SLIDE_TIME, P_SWEEP, P_FILTER_FM, P_TRACKING, P_DRIVE, P_MUFFLER,
+} from './dsp/engine';
 import { config, type EngineChoice } from './config';
 import type { EngineName, ProcessorMsg, VoiceMsg } from './dsp/protocol';
 
@@ -13,6 +16,16 @@ const KNOBS = [
 ] as const;
 type KnobName = typeof KNOBS[number][1];
 const PARAM_IDS: Partial<Record<KnobName, number>> = { cutoff: P_CUTOFF, reso: P_RESO, env: P_ENV, decay: P_DECAY, accent: P_ACCENT };
+
+// MODS row, inspired by the Devil Fish modification. Every default reproduces the stock voice. WASM/JS engines only
+const KNOBS_MOD = [
+  ['ACC DEC', 'accdec', P_ACC_DECAY, .5], ['VEG DEC', 'vegdec', P_VEG_DECAY, 1], ['SOFT ATK', 'softatk', P_SOFT_ATTACK, .5],
+  ['SLIDE', 'slide', P_SLIDE_TIME, 0], ['SWEEP', 'sweep', P_SWEEP, .5], ['FILTER FM', 'fm', P_FILTER_FM, 0],
+  ['TRACK', 'track', P_TRACKING, 0], ['DRIVE', 'drive', P_DRIVE, 0],
+] as const;
+const MODS_HTML = `<div class="row mods"><b>MODS</b>
+  ${KNOBS_MOD.map(([l, n, , def]) => `<label>${l} <input type="range" name="${n}" min="0" max="1" step="0.01" value="${def}"></label>`).join('')}
+  <label>MUFFLER <select name="muffler"><option value="0">OFF</option><option value="1">SOFT</option><option value="2">HARD</option></select></label></div>`;
 
 interface Step { note: number; oct: number; acc: boolean; sld: boolean } // note: -1 = rest, 0..12 = C..C+
 interface Pat303 extends Pat { steps: Step[] }
@@ -33,7 +46,7 @@ export function make303(name: string, pattern: number[][], opt: Opt303 = {}): Ma
     <label>FILTER <select name="filter"><option value="diode">DIODE</option><option value="ladder">LADDER</option></select></label>
     <label>WAVE <select name="wave"><option value="sawtooth">SAW</option><option value="square">SQUARE</option></select></label>
     ${KNOBS.map(([l, n, mn, mx, st, def]) => `<label>${l} <input type="range" name="${n}" min="${mn}" max="${mx}" step="${st}" value="${opt[n] ?? def}"></label>`).join('')}
-    </div><div class="seq"></div>`;
+    </div>${MODS_HTML}<div class="seq"></div>`;
   const q = <T extends Element = HTMLElement>(s: string) => root.querySelector<T>(s)!;
   const v = (n: KnobName) => +q<HTMLInputElement>(`[name=${n}]`).value;
   const wave = q<HTMLSelectElement>('[name=wave]');
@@ -43,7 +56,11 @@ export function make303(name: string, pattern: number[][], opt: Opt303 = {}): Ma
   const filterSel = q<HTMLSelectElement>('[name=filter]');
   engineSel.value = config.engine;
   filterSel.value = config.filter;
-  const syncFilterUi = () => { filterSel.disabled = engine() === 'classic'; }; // CLASSIC has its own fixed filter
+  const muffler = q<HTMLSelectElement>('[name=muffler]');
+  const syncFilterUi = () => { // CLASSIC has its own fixed filter and no mods
+    filterSel.disabled = engine() === 'classic';
+    q('.mods').classList.toggle('off', engine() === 'classic');
+  };
   syncFilterUi();
   engineSel.addEventListener('input', syncFilterUi);
 
@@ -95,6 +112,8 @@ export function make303(name: string, pattern: number[][], opt: Opt303 = {}): Ma
     for (const [n, id] of Object.entries(PARAM_IDS)) send({ k: 'p', id, v: v(n as KnobName) });
     send({ k: 'p', id: P_WAVE, v: wave.value === 'square' ? 1 : 0 });
     send({ k: 'p', id: P_FILTER, v: filterSel.value === 'diode' ? 1 : 0 });
+    for (const [, n, id] of KNOBS_MOD) send({ k: 'p', id, v: +q<HTMLInputElement>(`[name=${n}]`).value });
+    send({ k: 'p', id: P_MUFFLER, v: +muffler.value });
   };
   const cutoffHz = () => 60 * Math.pow(100, v('cutoff')); // 60Hz..6kHz
 
@@ -132,7 +151,7 @@ export function make303(name: string, pattern: number[][], opt: Opt303 = {}): Ma
       };
       voice.connect(ch.inp);
       sendParams();
-      root.querySelectorAll('input[type=range], [name=wave], [name=filter]').forEach(el => el.addEventListener('input', sendParams));
+      root.querySelectorAll('input[type=range], [name=wave], [name=filter], [name=muffler]').forEach(el => el.addEventListener('input', sendParams));
       engineSel.addEventListener('input', () => {
         send({ k: 'flush' });
         vca.gain.cancelScheduledValues(ctx.currentTime);

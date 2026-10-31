@@ -19,7 +19,7 @@ Press ▶ to start (browsers keep audio suspended until the first click). Chrome
 
 | Unit | What it does |
 |---|---|
-| **AB-303 #1 / #2** | ENGINE (WASM / JS / CLASSIC), FILTER (DIODE / LADDER), SAW / SQUARE, TUNE / CUTOFF / RESO / ENV MOD / DECAY / ACCENT. 16 steps with note, UP / DN, ACC (accent) and SLD (slide) |
+| **AB-303 #1 / #2** | ENGINE (WASM / JS / CLASSIC), FILTER (DIODE / LADDER), MODS (see below), SAW / SQUARE, TUNE / CUTOFF / RESO / ENV MOD / DECAY / ACCENT. 16 steps with note, UP / DN, ACC (accent) and SLD (slide) |
 | **AB-808** | BD / SD / CH / OH / CP. Fully synthesized; CH chokes OH |
 | **AB-909** | BD / SD / LT / HT / RS / CP / CH / OH / CR |
 | **PATTERN** | 32 patterns per machine (1-8 × A-D). Switching while playing waits for the next bar. SHUFFLE on/off per pattern |
@@ -44,6 +44,22 @@ Each AB-303 voice runs in an AudioWorklet: a PolyBLEP oscillator into a nonlinea
 |---|---|
 | **DIODE** (default) | TB-303-style diode ladder: coupled stages, about -12 to -18 dB/oct near cutoff steepening to -24 above, resonance thins the bass |
 | **LADDER** | Transistor (Moog-style) ladder: four identical stages, -24 dB/oct |
+
+### MODS
+
+A second row of controls inspired by the Devil Fish modification of the TB-303 (an independent fan implementation, not affiliated with its creator). Every default reproduces the stock voice exactly; a unit test checks the output against v0.5 sample by sample. WASM / JS engines only.
+
+| Knob | What it does |
+|---|---|
+| **ACC DEC** | Filter decay of accented notes (stock: short and fixed) |
+| **VEG DEC** | Volume decay while a note is held; max = hold (stock) |
+| **SOFT ATK** | Attack time of non-accented notes |
+| **SLIDE** | Slide time, 30-180 ms |
+| **SWEEP** | Accent sweep speed: how fast the extra filter opening from consecutive accents fades |
+| **FILTER FM** | Cutoff modulated at audio rate by the voice's own output |
+| **TRACK** | Cutoff follows the note pitch (1 = full tracking) |
+| **DRIVE** | Gain into the filter, up to heavy overdrive |
+| **MUFFLER** | Soft clipping on the output: OFF / SOFT / HARD |
 
 The same DSP exists twice, selectable per machine with **ENGINE**:
 
