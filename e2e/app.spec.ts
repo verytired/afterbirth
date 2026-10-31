@@ -78,7 +78,7 @@ async function record(page: Page, button: string, ms: number) {
 test('plays with sound and without clipping', async ({ page }) => {
   await play(page);
   const info = await page.evaluate(() => ({ state: window.ab.ctx.state, ch: window.ab.channels.length, pcf: window.ab.FX.PCF.nodes.length }));
-  expect(info).toEqual({ state: 'running', ch: 4, pcf: 4 });
+  expect(info).toEqual({ state: 'running', ch: 5, pcf: 5 });
   const pk = await masterPeak(page, 3000);
   expect(pk).toBeGreaterThan(0.2);
   expect(pk).toBeLessThan(0.95);
@@ -135,7 +135,7 @@ test('exports aligned stems that sum back to MASTER', async ({ page }) => {
   const { name, data } = await record(page, '#stems', 2500);
   expect(name).toMatch(/\.stems\.zip$/);
   const files = parseZip(data);
-  expect(Object.keys(files)).toEqual(['00-master.wav', '01-ab-303-1.wav', '02-ab-303-2.wav', '03-ab-808.wav', '04-ab-909.wav', '05-delay-return.wav']);
+  expect(Object.keys(files)).toEqual(['00-master.wav', '01-ab-303-1.wav', '02-ab-303-2.wav', '03-ab-808.wav', '04-ab-909.wav', '05-ab-606.wav', '06-delay-return.wav']);
   const w = Object.fromEntries(Object.entries(files).map(([k, v]) => [k, parseWav(v)]));
   const n = w['00-master.wav'].s.length;
   for (const k in w) expect(w[k].s.length).toBe(n);
@@ -234,6 +234,15 @@ test('909 runs on the WASM engine and can switch to JS while playing', async ({ 
   expect(await channelPeak(page, 3, 1500)).toBeGreaterThan(0.05);
 });
 
+const bd606 = async (page: Page) => { for (const c of [0, 4, 8, 12]) await page.click(`.d606 [data-r="1"][data-c="${c}"]`); };
+
+test('606 plays on the WASM engine', async ({ page }) => {
+  await bd606(page);
+  await play(page);
+  await expect(page.locator('.d606')).toHaveAttribute('data-engine', 'wasm');
+  expect(await channelPeak(page, 4, 1500)).toBeGreaterThan(0.1);
+});
+
 test('falls back to the JS engine when the WASM build cannot load', async ({ page }) => {
   await page.route('**/*.wasm', r => r.abort());
   await page.goto('./');
@@ -243,6 +252,9 @@ test('falls back to the JS engine when the WASM build cannot load', async ({ pag
   await expect(page.locator(engine909)).toHaveValue('js');
   await expect(page.locator(`${engine909} option[value=wasm]`)).toHaveJSProperty('disabled', true);
   expect(await channelPeak(page, 0, 1500)).toBeGreaterThan(0.05);
+  await bd606(page);
+  await expect(page.locator('.d606')).toHaveAttribute('data-engine', 'js');
+  expect(await channelPeak(page, 4, 1500)).toBeGreaterThan(0.1);
   errors = errors.filter(e => !e.includes('ERR_FAILED')); // the aborted .wasm request itself
 });
 
@@ -254,7 +266,7 @@ test('ACID TRIP preset: song switches patterns per bar and rides the knobs', asy
     cutoff: +document.querySelector<HTMLInputElement>('.dev [name=cutoff]')!.value,
   }));
   const s0 = await state();
-  expect(s0.sel).toEqual([26, 31, 31, 31]); // D3 D8 D8 D8
+  expect(s0.sel).toEqual([26, 31, 31, 31, 0]); // D3 D8 D8 D8, 606 not in the song: stays A1
   expect(s0.cutoff).toBeCloseTo(0.05, 2);
   // Jump the song to the groove row (bar 9) by shortening the intro to 1 bar
   await page.fill('#songtext', 'D3 D8 D8 D1 x1\nD1 D8 D8 D2 x16');
@@ -262,7 +274,7 @@ test('ACID TRIP preset: song switches patterns per bar and rides the knobs', asy
   await play(page);
   await page.waitForTimeout(1500); // > 1 bar at 200 BPM
   const s1 = await state();
-  expect(s1.sel).toEqual([24, 31, 31, 25]); // D1 D8 D8 D2
+  expect(s1.sel).toEqual([24, 31, 31, 25, 0]); // D1 D8 D8 D2
   expect(s1.cutoff).not.toBe(s0.cutoff);
   expect(await masterPeak(page, 300)).toBeGreaterThan(0.01);
   // END stops the transport instead of looping

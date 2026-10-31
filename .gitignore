@@ -4,3 +4,4 @@ test-results/
 playwright-report/
 src/dsp/voice.wasm
 src/dsp/tr909.wasm
+src/dsp/tr606.wasm

@@ -1,13 +1,14 @@
 import { ctx } from './state';
 import { Channel } from './audio';
+import { BD, SD, LT, HT, CY, CH, OH } from './dsp/tr606';
 import { loadPats, makeBank, mountDevice, type Machine, type Pat } from './rack';
 import { numbox } from './dom';
 import { config } from './config';
-import { loadDrums } from './dsp/load';
+import { load606, loadDrums } from './dsp/load';
 import { KNOBS, VOICES, makeRom } from './dsp/tr909';
-import type { DrumMsg, EngineName, ProcessorMsg } from './dsp/protocol';
+import type { DrumMsg, EngineName, Msg606, ProcessorMsg } from './dsp/protocol';
 
-type Hit = (t: number, level: number, accent: number) => void; // accent: AC amount on accented steps, else 0
+type Hit = (t: number, level: number, accent: number, step: number) => void; // accent: AC amount on accented steps, else 0. step: one 16th in seconds
 interface VoiceApi {
   env(t: number, peak: number, dec: number): GainNode;
   nz(t: number, dur: number, type: BiquadFilterType, f: number, dest: AudioNode): void;
@@ -113,7 +114,7 @@ function makeDrum(name: string, cls: string, pat: Record<string, string>, voices
       await opt.init?.(out, root);
     },
     // Patterns shorter than 16 steps loop on their own (polymeter) and restart when the pattern changes
-    play(i, t, _d, sh) {
+    play(i, t, d, sh) {
       const sel = bank.sel;
       bank.tick(i);
       if (bank.sel !== sel) cnt = 0;
@@ -124,8 +125,8 @@ function makeDrum(name: string, cls: string, pat: Record<string, string>, voices
       V.forEach((k, r) => {
         if (!grid[r][p] || !hit[k]) return;
         const fl = opt.flam?.includes(k) ? flam : 0;
-        if (fl) hit[k](t, lv(k) * acc * 0.5, ac);
-        hit[k](t + fl, lv(k) * acc, ac);
+        if (fl) hit[k](t, lv(k) * acc * 0.5, ac, d);
+        hit[k](t + fl, lv(k) * acc, ac, d);
       });
     },
     stop() { bank.tick(0); cnt = 0; },
@@ -197,4 +198,24 @@ export const make909 = () => {
         RD: [['RDtune', 'TUNE', 0.5]],
       },
     });
+};
+
+// Empty by default like the 909. The sound comes from the 606 engine (src/dsp/tr606.ts, WASM build in
+// assembly/tr606.ts) in an AudioWorklet; this side only sends hits. One global accent row
+export const make606 = () => {
+  let node: AudioWorkletNode | undefined;
+  const trig = (v: number): Hit => (t, l, _a, s) => node?.port.postMessage({ k: 'trig', t, v, l, s } satisfies Msg606);
+  return makeDrum('AB-606', 'd606',
+    { AC: '................', BD: '................', SD: '................', LT: '................', HT: '................',
+      CY: '................', CH: '................', OH: '................' },
+    () => ({ BD: trig(BD), SD: trig(SD), LT: trig(LT), HT: trig(HT), CY: trig(CY), CH: trig(CH), OH: trig(OH) }),
+    { async init(out) {
+      const wasm = await load606(ctx);
+      node = new AudioWorkletNode(ctx, 'tr606', { numberOfInputs: 0, numberOfOutputs: 1, outputChannelCount: [1], processorOptions: { wasm } });
+      node.port.onmessage = (e: MessageEvent<ProcessorMsg>) => {
+        if (e.data.k === 'engine') document.querySelector<HTMLElement>('.d606')!.dataset.engine = e.data.name;
+        if (e.data.k === 'error') console.warn('606 engine:', e.data.msg);
+      };
+      node.connect(out);
+    } });
 };

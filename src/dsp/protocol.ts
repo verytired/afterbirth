@@ -18,3 +18,6 @@ export type DrumMsg =
   | { k: 'hit'; t: number; v: Voice909; l: number; a: number; p: number[] } // a: accent amount, p: the voice's KNOBS values
   | { k: 'flush' }
   | { k: 'engine'; name: EngineName };
+
+// Main thread -> 606 worklet: one drum hit (v: part index, l: level with accent, s: one 16th in seconds)
+export type Msg606 = { k: 'trig'; t: number; v: number; l: number; s: number };

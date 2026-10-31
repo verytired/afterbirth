@@ -126,3 +126,10 @@ h2{margin:0 0 10px;font-size:18px;font-style:italic;font-weight:900;letter-spaci
 .dk{display:flex;flex-direction:column;align-items:center;gap:1px}
 .dk i{font-style:normal;font-size:7px;font-weight:700;letter-spacing:.3px}
 .drow button.off{opacity:.3}
+
+/* 606 */
+.d606{background:linear-gradient(#3a3a3a,#1e1e1e)}
+.d606 h2{color:#e8e2d0}
+.d606 .drow b{color:#e8e2d0}
+.d606 .drow button{background:linear-gradient(#e8e2d0,#bdb6a2)}
+.d606 .drow button.on::after{background:#ff3b2f;box-shadow:0 0 6px #ff3b2f}
