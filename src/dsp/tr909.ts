@@ -49,8 +49,9 @@ const pcm = (rom: number, rate: number, peak: number, dec: number, group = 0) =>
 export function recipe(v: Voice909, l: number, p: number[]): Comp[] {
   switch (v) {
     case 'BD': { // near-sine with a pitch dive (time constant = TUNE), click of pulse + lowpassed noise (ATTACK)
+      // Rest pitch about 56 Hz, set by R27 to +15 V on the original (circuit notes in HelveticaScenario/operator#169)
       const d = 0.15 + 1.05 * p[2], atk = p[1];
-      return [osc(220, 50, -(0.008 + 0.06 * p[0]), l, d), osc(1000, 1000, 0.001, l * 0.3 * atk, 0.002, W_SQUARE),
+      return [osc(246, 56, -(0.008 + 0.06 * p[0]), l, d), osc(1000, 1000, 0.001, l * 0.3 * atk, 0.002, W_SQUARE),
         noise(F_LP, 3000, 0.02, l * 0.5 * atk, 0.015)];
     }
     case 'SD': { // noise-led: attack crack, TONE opens the noise lowpass, SNAPPY sets its level
