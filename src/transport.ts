@@ -3,6 +3,7 @@ import { ctx, initCtx, playing, setPlaying, ext } from './state';
 import { delay, master, pcfStep, refresh } from './audio';
 import { machines } from './rack';
 import { shuffleOffset } from './lib';
+import { songStep, resetSong } from './song';
 
 export const tempo = numbox($('tempo'), 60, 200, 128);
 export let cur = 0;
@@ -23,6 +24,7 @@ export async function ensureAudio() {
 // Play one step at time t (shared by internal and MIDI clock)
 export function playStep(i: number, t: number, d: number) {
   const sh = shuffleOffset(i, fv('shuffle'), d);
+  if (songStep(i)) { stop(); document.dispatchEvent(new Event('songend')); return; } // before play: queues the bar's patterns and applies automation
   machines.forEach(m => m.play(i, t, d, sh));
   pcfStep(i, t);
   delay.setTime(d);
@@ -38,7 +40,8 @@ function tick() {
   }
 }
 
-export function start() { setPlaying(true); $('play').classList.add('on'); }
+// ponytail: MIDI Continue / Song Position also restart the song from bar 1
+export function start() { resetSong(); setPlaying(true); $('play').classList.add('on'); }
 export function stop() {
   if (!playing) return;
   setPlaying(false);

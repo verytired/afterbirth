@@ -145,7 +145,7 @@ export function make303(name: string, pattern: number[][], opt: Opt303 = {}): Ma
   const cutoffHz = () => 60 * Math.pow(100, v('cutoff')); // 60Hz..6kHz
 
   return {
-    name, pats,
+    name, pats, bank,
     setSteps(slot, data) {
       pats[slot].steps.forEach((s, i) => {
         const [note, oct = 0, acc = 0, sld = 0] = data[i] ?? [-1];

@@ -63,6 +63,9 @@ function recTimer() {
 
 export function wireRecording() {
   setInterval(recTimer, 250);
+  // A song that hits END finishes any running recording once the tail has rung out
+  document.addEventListener('songend', () => setTimeout(() =>
+    ['rec', 'stems', 'vid'].forEach(id => $(id).classList.contains('recording') && $(id).click()), 2000));
 
   $('rec').onclick = async () => {
     await ensureAudio();

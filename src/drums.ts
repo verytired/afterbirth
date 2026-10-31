@@ -71,7 +71,7 @@ function makeDrum(name: string, cls: string, pat: Record<string, string>, voices
   const hit = voices({ env, nz, tone, choke, clap });
 
   return {
-    name, pats, parts: V,
+    name, pats, bank, parts: V,
     hit: (part, i) => grid[V.indexOf(part)]?.[i] ?? false,
     init() {
       ch.init();

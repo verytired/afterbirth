@@ -9,6 +9,8 @@ import { cur, ensureAudio, tempo, wireTransport } from './transport';
 import { onMidi, wireMidi } from './midi';
 import { wireRecording } from './record';
 import { wireOutput } from './output';
+import { song, wireSong } from './song';
+import { wirePreset } from './preset';
 import { wireDemo } from './demo';
 
 machines.push(
@@ -27,6 +29,8 @@ wireTransport();
 wireMidi();
 wireRecording();
 wireOutput();
+wireSong(); // after knobify
+wirePreset();
 wireDemo();
 document.addEventListener('click', save);
 document.addEventListener('change', save);
@@ -34,7 +38,7 @@ document.addEventListener('change', save);
 // Hook for the Playwright tests
 const ab = {
   get ctx() { return ctx; }, get playing() { return playing; }, get cur() { return cur; },
-  tempo, channels, FX, machines, master, onMidi, ensureAudio, setExt,
+  tempo, song, channels, FX, machines, master, onMidi, ensureAudio, setExt,
 };
 declare global { interface Window { ab: typeof ab } }
 window.ab = ab;

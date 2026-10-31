@@ -39,6 +39,7 @@ export function knobify() {
     k.className = 'knob'; k.tabIndex = 0; k.setAttribute('role', 'slider');
     k.setAttribute('aria-label', inp.name || inp.id);
     inp.hidden = true; inp.after(k);
+    inp.addEventListener('input', () => set()); // follow programmatic changes (song automation)
     const set = (val?: number | string) => {
       if (val !== undefined) { inp.value = String(val); inp.dispatchEvent(new Event('input')); }
       k.style.setProperty('--a', ((+inp.value - min) / (max - min) * 270 - 135) + 'deg');

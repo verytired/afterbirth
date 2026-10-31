@@ -113,6 +113,7 @@ h2{margin:0 0 10px;font-size:18px;font-style:italic;font-weight:900;letter-spaci
 .fx .hdr{background:linear-gradient(#4b8cf0,#1f5fc9);color:#fff}
 .fx.master .hdr{background:linear-gradient(#b7e05a,#86b51f);color:#1d2a08}
 .fx .row{gap:10px;margin-bottom:6px}
+.song textarea{width:100%;box-sizing:border-box;margin-bottom:6px;font:11px/1.3 monospace;background:#111;color:#f93;border:1px solid #000;resize:vertical}
 .seg{display:flex;flex-direction:column;gap:2px}
 .meter{position:relative;width:12px;height:110px;background:#111;border:1px solid #000}
 .meter i{position:absolute;left:0;right:0;bottom:0;background:linear-gradient(to top,#3c3 0 70%,#ee3 70% 90%,#f33 90%)}

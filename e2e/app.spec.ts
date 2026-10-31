@@ -253,3 +253,47 @@ test('falls back to the JS engine when the WASM build cannot load', async ({ pag
   expect(await channelPeak(page, 0, 1500)).toBeGreaterThan(0.05);
   errors = errors.filter(e => !e.includes('ERR_FAILED')); // the aborted .wasm request itself
 });
+
+test('ACID TRIP preset: song switches patterns per bar and rides the knobs', async ({ page }) => {
+  page.on('dialog', d => d.accept());
+  await page.click('#preset');
+  const state = () => page.evaluate(() => ({
+    sel: window.ab.machines.map(m => m.bank.sel),
+    cutoff: +document.querySelector<HTMLInputElement>('.dev [name=cutoff]')!.value,
+  }));
+  const s0 = await state();
+  expect(s0.sel).toEqual([26, 31, 31, 31]); // D3 D8 D8 D8
+  expect(s0.cutoff).toBeCloseTo(0.05, 2);
+  // Jump the song to the groove row (bar 9) by shortening the intro to 1 bar
+  await page.fill('#songtext', 'D3 D8 D8 D1 x1\nD1 D8 D8 D2 x16');
+  await page.evaluate(() => window.ab.tempo.set(200));
+  await play(page);
+  await page.waitForTimeout(1500); // > 1 bar at 200 BPM
+  const s1 = await state();
+  expect(s1.sel).toEqual([24, 31, 31, 25]); // D1 D8 D8 D2
+  expect(s1.cutoff).not.toBe(s0.cutoff);
+  expect(await masterPeak(page, 300)).toBeGreaterThan(0.01);
+  // END stops the transport instead of looping
+  await page.click('#rec');
+  const dl = page.waitForEvent('download');
+  await page.fill('#songtext', 'D1 D8 D8 D2 x1\nEND');
+  expect((await dl).suggestedFilename()).toMatch(/\.wav$/); // the recording finishes by itself
+  expect(await page.evaluate(() => window.ab.playing)).toBe(false);
+  await expect(page.locator('#songpos')).toHaveText('END');
+});
+
+test('AUTO records knob moves into the song and plays them back', async ({ page }) => {
+  await page.click('#songon');
+  await page.fill('#songtext', 'A1 A1 A1 A1 x1');
+  await page.evaluate(() => window.ab.tempo.set(200));
+  await page.click('#autorec');
+  await play(page);
+  const knob = '.dev [name=cutoff]';
+  await page.evaluate(k => { const i = document.querySelector<HTMLInputElement>(k)!; i.value = '0.9'; i.dispatchEvent(new Event('input')); }, knob);
+  await page.waitForTimeout(1300); // past the loop point, so step 0 is overwritten by the latch too
+  await page.click('#autorec');
+  await page.evaluate(k => { const i = document.querySelector<HTMLInputElement>(k)!; i.value = '0.1'; i.dispatchEvent(new Event('input')); }, knob);
+  await page.waitForTimeout(1300); // one more loop replays 0.9
+  expect(+await page.inputValue(knob)).toBeCloseTo(0.9, 3);
+  expect(await page.evaluate(() => JSON.parse(localStorage.getItem('ab3389-song')!).auto[5]['0:cutoff'])).toBeCloseTo(0.9, 3);
+});
