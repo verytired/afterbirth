@@ -17,6 +17,7 @@ const P_FILTER_FM = 12;
 const P_TRACKING = 13;
 const P_DRIVE = 14;
 const P_MUFFLER = 15;
+const P_SELF_OSC = 16;
 
 const OS = 2;
 const SLIDE_TAU: f64 = 0.03;
@@ -34,17 +35,24 @@ const out = new StaticArray<f32>(128);
 let fs: f64 = 96000;
 let cutoff: f64 = 0.3; let reso: f64 = 12; let env: f64 = 0.5; let decay: f64 = 0.9; let accent: f64 = 0.6; let wave: f64 = 0;
 let filter: f64 = 0;
-let fm: f64 = 0; let tracking: f64 = 0; let drive: f64 = 1; let muffler: f64 = 0; let accDecay: f64 = 0.05;
+let fm: f64 = 0; let tracking: f64 = 0; let drive: f64 = 1; let muffler: f64 = 0; let accDecay: f64 = 0.05; let selfOsc: f64 = 0;
 let phase: f64 = 0; let freq: f64 = 110; let target: f64 = 110; let sliding = false;
 let amp: f64 = 0; let ampTarget: f64 = 0; let veg: f64 = 1; let vegK: f64 = 1; let yPrev: f64 = 0; let fenv: f64 = 0; let fenvK: f64 = 0; let envAmt: f64 = 0; let sweep: f64 = 0;
 let l1: f64 = 0; let l2: f64 = 0; let l3: f64 = 0; let l4: f64 = 0; // ladder states
 let d1: f64 = 0; let d2: f64 = 0; let d3: f64 = 0; let d4: f64 = 0; // diode ladder states
 let kSlide: f64 = 0; let kAtt: f64 = 0; let kRel: f64 = 0; let kSweep: f64 = 0;
 
-function decayTau(knob: f64): f64 { return 0.015 * Math.pow(40, (knob - 0.05) / 1.45); }
-function accDecayTau(k: f64): f64 { return 0.05 * Math.pow(10, (k - 0.5) * 2); }
+const DECAY_09: f64 = 0.015 * Math.pow(40, 0.85 / 1.45);
+function decayTau(knob: f64): f64 {
+  if (knob >= 1.5) return Infinity;
+  if (knob <= 0.9) return 0.015 * Math.pow(40, (knob - 0.05) / 1.45);
+  return DECAY_09 * Math.pow(3 / DECAY_09, (knob - 0.9) / 0.6);
+}
+function accDecayTau(k: f64): f64 {
+  return k >= 1 ? Infinity : k < 0.5 ? 0.05 * Math.pow(0.32, (0.5 - k) * 2) : 0.05 * Math.pow(60, (k - 0.5) * 2);
+}
 function attackTau(k: f64): f64 { return ATTACK_TAU * Math.pow(10, (k - 0.5) * 2); }
-function slideTau(k: f64): f64 { return SLIDE_TAU * Math.pow(6, k); }
+function slideTau(k: f64): f64 { return SLIDE_TAU * Math.pow(5, k); }
 function sweepTau(k: f64): f64 { return SWEEP_TAU * Math.pow(4, (k - 0.5) * 2); }
 function vegTau(k: f64): f64 { return 0.016 * Math.pow(200, k); }
 
@@ -113,8 +121,9 @@ export function setParam(id: i32, v: f64): void {
   else if (id == P_SWEEP) kSweep = Math.exp(-1 / (sweepTau(v) * fs));
   else if (id == P_FILTER_FM) fm = v;
   else if (id == P_TRACKING) tracking = v;
-  else if (id == P_DRIVE) drive = Math.pow(10, v * 1.5);
+  else if (id == P_DRIVE) drive = Math.pow(10, v * 1.8235);
   else if (id == P_MUFFLER) muffler = v;
+  else if (id == P_SELF_OSC) selfOsc = v;
 }
 
 export function noteOn(f: f64, acc: f64, slide: i32): void {
@@ -136,8 +145,9 @@ export function noteOff(): void { ampTarget = 0; }
 // Renders n (<= 128) samples into the buffer at outPtr()
 export function render(n: i32): void {
   const diode = filter >= 0.5;
-  const k: f64 = (diode ? DIODE_K : LADDER_K) * reso / 20;
-  const comp: f64 = 1 + k * (diode ? DIODE_COMP : LADDER_COMP);
+  const kStock: f64 = (diode ? DIODE_K : LADDER_K) * reso / 20;
+  const k: f64 = selfOsc >= 0.5 ? kStock * 1.3 : kStock;
+  const comp: f64 = 1 + kStock * (diode ? DIODE_COMP : LADDER_COMP);
   const base: f64 = 60 * Math.pow(100, cutoff);
   const maxFc: f64 = 0.45 * fs;
   for (let i = 0; i < n; i++) {

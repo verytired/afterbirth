@@ -64,6 +64,8 @@ h2{margin:0 0 10px;font-size:18px;font-style:italic;font-weight:900;letter-spaci
 @media (max-width:700px){.seq{grid-template-columns:repeat(8,1fr)}}
 .mods{margin-top:10px;padding-top:8px;border-top:1px solid #9a9a9a}
 .mods>b{align-self:center;font-size:11px;font-style:italic;letter-spacing:1px}
+.dbs{display:flex;gap:10px}
+.dbs select{max-width:78px}
 .mods .knob{width:30px;height:30px}
 .mods.off{opacity:.35;pointer-events:none}
 .step{display:flex;flex-direction:column;gap:2px;padding:3px;border-radius:2px;background:#333;color:#888;font-size:9px;text-align:center;min-width:0}

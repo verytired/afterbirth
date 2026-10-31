@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import V05 from './v05.fp.json';
 import { Voice303, Ladder, DiodeLadder, P_CUTOFF, P_RESO, P_ENV, P_DECAY, P_ACCENT, P_WAVE, P_FILTER, DIODE_K, LADDER_K,
-  P_ACC_DECAY, P_VEG_DECAY, P_SOFT_ATTACK, P_SLIDE_TIME, P_SWEEP, P_FILTER_FM, P_TRACKING, P_DRIVE, P_MUFFLER } from './engine';
+  P_ACC_DECAY, P_VEG_DECAY, P_SOFT_ATTACK, P_SLIDE_TIME, P_SWEEP, P_FILTER_FM, P_TRACKING, P_DRIVE, P_MUFFLER, P_SELF_OSC } from './engine';
 
 const SR = 48000;
 
@@ -97,7 +97,8 @@ describe('Voice303', () => {
 
   it('stays stable with every knob and mod at max', () => {
     const out = drive(tsEngine(), script(), FRAMES, { [P_FILTER]: 1, [P_CUTOFF]: 1, [P_RESO]: 20, [P_ENV]: 1, [P_DECAY]: 1.5, [P_ACCENT]: 1,
-      [P_ACC_DECAY]: 1, [P_SOFT_ATTACK]: 1, [P_SLIDE_TIME]: 1, [P_SWEEP]: 1, [P_FILTER_FM]: 1, [P_TRACKING]: 1, [P_DRIVE]: 1, [P_MUFFLER]: 2 });
+      [P_ACC_DECAY]: 1, [P_SOFT_ATTACK]: 1, [P_SLIDE_TIME]: 1, [P_SWEEP]: 1, [P_FILTER_FM]: 1, [P_TRACKING]: 1, [P_DRIVE]: 1, [P_MUFFLER]: 2,
+      [P_SELF_OSC]: 1 });
     expect(out.every(Number.isFinite)).toBe(true);
     expect(peak(out)).toBeLessThan(2);
   });
@@ -150,6 +151,7 @@ describe('WASM engine', () => {
     ['diode max knobs', { [P_FILTER]: 1, [P_CUTOFF]: 1, [P_RESO]: 20, [P_ENV]: 1, [P_DECAY]: 1.5, [P_ACCENT]: 1 }],
     ['all mods', { [P_FILTER]: 1, [P_ACC_DECAY]: 0.8, [P_VEG_DECAY]: 0.4, [P_SOFT_ATTACK]: 0.9, [P_SLIDE_TIME]: 0.7, [P_SWEEP]: 0.2,
       [P_FILTER_FM]: 0.3, [P_TRACKING]: 0.6, [P_DRIVE]: 0.5, [P_MUFFLER]: 1 }],
+    ['self osc, extended ranges', { [P_FILTER]: 1, [P_RESO]: 20, [P_SELF_OSC]: 1, [P_DECAY]: 1.5, [P_ENV]: 3, [P_ACC_DECAY]: 1, [P_DRIVE]: 1 }],
   ] as const) {
     it(`matches the TS engine (${label})`, () => {
       const a = drive(tsEngine(), script(), FRAMES, params), b = drive(wasmEngine(), script(), FRAMES, params);
@@ -208,5 +210,8 @@ describe('filters', () => {
     expect(ringRatio(() => new Ladder(), LADDER_K)).toBeLessThan(0.5);
     expect(ringRatio(() => new DiodeLadder(), DIODE_K)).toBeLessThan(0.5);
     expect(ringRatio(() => new DiodeLadder(), 20)).toBeGreaterThan(0.9); // above it, the tanh holds a steady self-oscillation
+    // SELF OSC scales the max feedback by 1.3, which must reach self-oscillation for both filters
+    expect(ringRatio(() => new Ladder(), LADDER_K * 1.3)).toBeGreaterThan(0.9);
+    expect(ringRatio(() => new DiodeLadder(), DIODE_K * 1.3)).toBeGreaterThan(0.9);
   });
 });

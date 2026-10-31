@@ -51,15 +51,19 @@ A second row of controls inspired by the Devil Fish modification of the TB-303 (
 
 | Knob | What it does |
 |---|---|
-| **ACC DEC** | Filter decay of accented notes (stock: short and fixed) |
+| **ACC DEC** | Filter decay of accented notes, 16 ms to 3 s, max = no decay (stock: short and fixed) |
 | **VEG DEC** | Volume decay while a note is held; max = hold (stock) |
 | **SOFT ATK** | Attack time of non-accented notes |
-| **SLIDE** | Slide time, 30-180 ms |
+| **SLIDE** | Slide time, up to 5× the stock length |
 | **SWEEP** | Accent sweep speed: how fast the extra filter opening from consecutive accents fades |
 | **FILTER FM** | Cutoff modulated at audio rate by the voice's own output |
 | **TRACK** | Cutoff follows the note pitch (1 = full tracking) |
-| **DRIVE** | Gain into the filter, up to heavy overdrive |
+| **DRIVE** | Gain into the filter, up to 66.6× |
 | **MUFFLER** | Soft clipping on the output: OFF / SOFT / HARD |
+| **SELF OSC** | Lets RESO push the filter into self-oscillation (use TRACK to play it in tune) |
+| **DBS A / B** | Dynamic Bank Switching: while the chosen drum part hits on a step, or while the button is held, that step is read from the pattern with bit A / B of its number flipped (A1 ↔ A2 / A3) |
+
+The stock panel also gets the Devil Fish ranges: **ENV MOD** goes to 3× the stock maximum, and **DECAY** stretches from 15 ms to 3 s with the far right position holding the filter open. Both keep their stock sound at the default position.
 
 The same DSP exists twice, selectable per machine with **ENGINE**:
 

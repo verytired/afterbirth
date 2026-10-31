@@ -191,6 +191,27 @@ test('303 MODS reach the engine and are disabled for CLASSIC', async ({ page }) 
   await expect(page.locator(`${dev} .mods`)).toHaveClass(/off/);
 });
 
+test('Dynamic Bank Switching reads steps from the flipped bank while held or triggered', async ({ page }) => {
+  const dev = '#devs .dev:nth-child(1)';
+  const bar2 = 3750; // two bars at 128 BPM, so every measurement covers whole patterns
+  await play(page);
+  const normal = await channelRms(page, 0, bar2);
+  expect(normal).toBeGreaterThan(0.03);
+
+  // Holding A reads A2, which is empty: silence
+  const btn = page.locator(`${dev} [data-dbs=A]`);
+  await btn.dispatchEvent('pointerdown');
+  await page.waitForTimeout(300);
+  expect(await channelRms(page, 0, 1000)).toBeLessThan(normal * 0.1);
+  await btn.dispatchEvent('pointerup');
+
+  // Triggered by the 808 BD: only the BD steps go silent
+  await page.selectOption(`${dev} [name=dbsA]`, { label: '808 BD' });
+  const triggered = await channelRms(page, 0, bar2);
+  expect(triggered).toBeLessThan(normal * 0.95);
+  expect(triggered).toBeGreaterThan(normal * 0.3);
+});
+
 test('303 runs on the WASM engine and can switch engines while playing', async ({ page }) => {
   await play(page);
   await expect(page.locator(engine303)).toHaveValue('wasm');
