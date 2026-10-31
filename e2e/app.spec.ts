@@ -148,6 +148,18 @@ test('exports aligned stems that sum back to MASTER', async ({ page }) => {
 });
 
 const engine303 = '#devs .dev:nth-child(1) [name=engine]';
+const filter303 = '#devs .dev:nth-child(1) [name=filter]';
+
+test('303 filter switches between diode and ladder while playing', async ({ page }) => {
+  await play(page);
+  await expect(page.locator(filter303)).toHaveValue('diode');
+  for (const f of ['ladder', 'diode']) {
+    await page.selectOption(filter303, f);
+    expect(await channelPeak(page, 0, 1500)).toBeGreaterThan(0.05);
+  }
+  await page.selectOption(engine303, 'classic');
+  await expect(page.locator(filter303)).toBeDisabled();
+});
 
 test('303 runs on the WASM engine and can switch engines while playing', async ({ page }) => {
   await play(page);

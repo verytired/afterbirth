@@ -7,6 +7,7 @@ const P_ENV = 2;
 const P_DECAY = 3;
 const P_ACCENT = 4;
 const P_WAVE = 5;
+const P_FILTER = 6;
 
 const OS = 2;
 const SLIDE_TAU: f64 = 0.03;
@@ -14,20 +15,60 @@ const ATTACK_TAU: f64 = 0.002;
 const RELEASE_TAU: f64 = 0.006;
 const SWEEP_TAU: f64 = 0.4;
 const GAIN: f64 = 0.55;
+const LADDER_K: f64 = 3.8;
+const DIODE_K: f64 = 17;
+const LADDER_COMP: f64 = 0.5;
+const DIODE_COMP: f64 = 0.6;
 
 const out = new StaticArray<f32>(128);
 
 let fs: f64 = 96000;
 let cutoff: f64 = 0.3; let reso: f64 = 12; let env: f64 = 0.5; let decay: f64 = 0.4; let accent: f64 = 0.6; let wave: f64 = 0;
+let filter: f64 = 0;
 let phase: f64 = 0; let freq: f64 = 110; let target: f64 = 110; let sliding = false;
 let amp: f64 = 0; let ampTarget: f64 = 0; let fenv: f64 = 0; let fenvK: f64 = 0; let envAmt: f64 = 0; let sweep: f64 = 0;
-let s1: f64 = 0; let s2: f64 = 0; let s3: f64 = 0; let s4: f64 = 0;
+let l1: f64 = 0; let l2: f64 = 0; let l3: f64 = 0; let l4: f64 = 0; // ladder states
+let d1: f64 = 0; let d2: f64 = 0; let d3: f64 = 0; let d4: f64 = 0; // diode ladder states
 let kSlide: f64 = 0; let kAtt: f64 = 0; let kRel: f64 = 0; let kSweep: f64 = 0;
 
 function polyBlep(t: f64, dt: f64): f64 {
   if (t < dt) { t /= dt; return t + t - t * t - 1; }
   if (t > 1 - dt) { t = (t - 1) / dt; return t * t + t + t + 1; }
   return 0;
+}
+
+function ladderTick(x: f64, g: f64, k: f64): f64 {
+  const G: f64 = g / (1 + g);
+  const sum: f64 = (((l1 * (1 - G)) * G + l2 * (1 - G)) * G + l3 * (1 - G)) * G + l4 * (1 - G);
+  const G4: f64 = G * G * G * G;
+  const u: f64 = Math.tanh((x - k * sum) / (1 + k * G4));
+  let v: f64 = G * (u - l1); const y1: f64 = v + l1; l1 = y1 + v;
+  v = G * (y1 - l2); const y2: f64 = v + l2; l2 = y2 + v;
+  v = G * (y2 - l3); const y3: f64 = v + l3; l3 = y3 + v;
+  v = G * (y3 - l4); const y4: f64 = v + l4; l4 = y4 + v;
+  return y4;
+}
+
+function diodeTick(x: f64, g: f64, k: f64): f64 {
+  const d: f64 = 1 + 2 * g;
+  const c1: f64 = -g / d; const m2: f64 = d + g * c1;
+  const c2: f64 = -g / m2; const m3: f64 = d + g * c2;
+  const c3: f64 = -g / m3; const m4: f64 = 1 + g + g * c3;
+  const p1: f64 = (d1 + g * x) / d;
+  const p2: f64 = (d2 + g * p1) / m2;
+  const p3: f64 = (d3 + g * p2) / m3;
+  const a4: f64 = (d4 + g * p3) / m4;
+  const b4: f64 = g / d * g / m2 * g / m3 * g / m4;
+  const u: f64 = Math.tanh(x - k * a4 / (1 + k * b4));
+  const q1: f64 = (d1 + g * u) / d;
+  const q2: f64 = (d2 + g * q1) / m2;
+  const q3: f64 = (d3 + g * q2) / m3;
+  const y4: f64 = (d4 + g * q3) / m4;
+  const y3: f64 = q3 - c3 * y4;
+  const y2: f64 = q2 - c2 * y3;
+  const y1: f64 = q1 - c1 * y2;
+  d1 = 2 * y1 - d1; d2 = 2 * y2 - d2; d3 = 2 * y3 - d3; d4 = 2 * y4 - d4;
+  return y4;
 }
 
 export function init(sampleRate: f64): void {
@@ -47,6 +88,7 @@ export function setParam(id: i32, v: f64): void {
   else if (id == P_DECAY) decay = v;
   else if (id == P_ACCENT) accent = v;
   else if (id == P_WAVE) wave = v;
+  else if (id == P_FILTER) filter = v;
 }
 
 export function noteOn(f: f64, acc: f64, slide: i32): void {
@@ -66,7 +108,9 @@ export function noteOff(): void { ampTarget = 0; }
 
 // Renders n (<= 128) samples into the buffer at outPtr()
 export function render(n: i32): void {
-  const k: f64 = 3.8 * reso / 20;
+  const diode = filter >= 0.5;
+  const k: f64 = (diode ? DIODE_K : LADDER_K) * reso / 20;
+  const comp: f64 = 1 + k * (diode ? DIODE_COMP : LADDER_COMP);
   const base: f64 = 60 * Math.pow(100, cutoff);
   const maxFc: f64 = 0.45 * fs;
   for (let i = 0; i < n; i++) {
@@ -89,16 +133,9 @@ export function render(n: i32): void {
       amp += (ampTarget - amp) * (ampTarget > amp ? kAtt : kRel);
       const fc: f64 = Math.min(maxFc, Math.min(16000, base * (1 + envAmt * fenv)));
       const g: f64 = Math.tan(Math.PI * fc / fs);
-      const G: f64 = g / (1 + g);
-      const sum: f64 = (((s1 * (1 - G)) * G + s2 * (1 - G)) * G + s3 * (1 - G)) * G + s4 * (1 - G);
-      const G4: f64 = G * G * G * G;
-      const u: f64 = Math.tanh((x - k * sum) / (1 + k * G4));
-      let v: f64 = G * (u - s1); const y1: f64 = v + s1; s1 = y1 + v;
-      v = G * (y1 - s2); const y2: f64 = v + s2; s2 = y2 + v;
-      v = G * (y2 - s3); const y3: f64 = v + s3; s3 = y3 + v;
-      v = G * (y3 - s4); const y4: f64 = v + s4; s4 = y4 + v;
-      acc += y4 * amp;
+      const y: f64 = diode ? diodeTick(x, g, k) : ladderTick(x, g, k);
+      acc += y * amp;
     }
-    unchecked(out[i] = <f32>(acc / OS * GAIN * (1 + k * 0.5)));
+    unchecked(out[i] = <f32>(acc / OS * GAIN * comp));
   }
 }

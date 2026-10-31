@@ -2,7 +2,8 @@ import { ctx } from './state';
 import { Channel } from './audio';
 import { loadPats, makeBank, mountDevice, type Machine, type Pat } from './rack';
 import { loadVoice } from './dsp/load';
-import { P_ACCENT, P_CUTOFF, P_DECAY, P_ENV, P_RESO, P_WAVE } from './dsp/engine';
+import { P_ACCENT, P_CUTOFF, P_DECAY, P_ENV, P_FILTER, P_RESO, P_WAVE } from './dsp/engine';
+import { config, type EngineChoice } from './config';
 import type { EngineName, ProcessorMsg, VoiceMsg } from './dsp/protocol';
 
 const NOTES = ['—', 'C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B', 'C+'];
@@ -12,8 +13,6 @@ const KNOBS = [
 ] as const;
 type KnobName = typeof KNOBS[number][1];
 const PARAM_IDS: Partial<Record<KnobName, number>> = { cutoff: P_CUTOFF, reso: P_RESO, env: P_ENV, decay: P_DECAY, accent: P_ACCENT };
-// wasm/js = the 303 voice in an AudioWorklet (same DSP, two builds); classic = the original BiquadFilter graph
-type EngineChoice = EngineName | 'classic';
 
 interface Step { note: number; oct: number; acc: boolean; sld: boolean } // note: -1 = rest, 0..12 = C..C+
 interface Pat303 extends Pat { steps: Step[] }
@@ -31,6 +30,7 @@ export function make303(name: string, pattern: number[][], opt: Opt303 = {}): Ma
   root.innerHTML = `<h2>${name}</h2><div class="row">
     <button data-a="rand">RANDOM</button><button data-a="clear">CLEAR</button>
     <label>ENGINE <select name="engine"><option value="wasm">WASM</option><option value="js">JS</option><option value="classic">CLASSIC</option></select></label>
+    <label>FILTER <select name="filter"><option value="diode">DIODE</option><option value="ladder">LADDER</option></select></label>
     <label>WAVE <select name="wave"><option value="sawtooth">SAW</option><option value="square">SQUARE</option></select></label>
     ${KNOBS.map(([l, n, mn, mx, st, def]) => `<label>${l} <input type="range" name="${n}" min="${mn}" max="${mx}" step="${st}" value="${opt[n] ?? def}"></label>`).join('')}
     </div><div class="seq"></div>`;
@@ -40,6 +40,12 @@ export function make303(name: string, pattern: number[][], opt: Opt303 = {}): Ma
   if (opt.wave) wave.value = opt.wave;
   const engineSel = q<HTMLSelectElement>('[name=engine]');
   const engine = () => engineSel.value as EngineChoice;
+  const filterSel = q<HTMLSelectElement>('[name=filter]');
+  engineSel.value = config.engine;
+  filterSel.value = config.filter;
+  const syncFilterUi = () => { filterSel.disabled = engine() === 'classic'; }; // CLASSIC has its own fixed filter
+  syncFilterUi();
+  engineSel.addEventListener('input', syncFilterUi);
 
   const stepEls = steps.map((_, i) => {
     const el = document.createElement('div');
@@ -88,6 +94,7 @@ export function make303(name: string, pattern: number[][], opt: Opt303 = {}): Ma
   const sendParams = () => {
     for (const [n, id] of Object.entries(PARAM_IDS)) send({ k: 'p', id, v: v(n as KnobName) });
     send({ k: 'p', id: P_WAVE, v: wave.value === 'square' ? 1 : 0 });
+    send({ k: 'p', id: P_FILTER, v: filterSel.value === 'diode' ? 1 : 0 });
   };
   const cutoffHz = () => 60 * Math.pow(100, v('cutoff')); // 60Hz..6kHz
 
@@ -125,7 +132,7 @@ export function make303(name: string, pattern: number[][], opt: Opt303 = {}): Ma
       };
       voice.connect(ch.inp);
       sendParams();
-      root.querySelectorAll('input[type=range], [name=wave]').forEach(el => el.addEventListener('input', sendParams));
+      root.querySelectorAll('input[type=range], [name=wave], [name=filter]').forEach(el => el.addEventListener('input', sendParams));
       engineSel.addEventListener('input', () => {
         send({ k: 'flush' });
         vca.gain.cancelScheduledValues(ctx.currentTime);
