@@ -146,6 +146,13 @@ export function make303(name: string, pattern: number[][], opt: Opt303 = {}): Ma
 
   return {
     name, pats,
+    setSteps(slot, data) {
+      pats[slot].steps.forEach((s, i) => {
+        const [note, oct = 0, acc = 0, sld = 0] = data[i] ?? [-1];
+        Object.assign(s, { note, oct, acc: !!acc, sld: !!sld });
+      });
+      if (slot === bank.sel) renderAll();
+    },
     rackReady() {
       const opts = machines.flatMap((m, idx) => (m.parts ?? []).map(p => new Option(`${m.name.replace(/^AB-/, '')} ${p}`, `${idx}:${p}`)));
       for (const sel of Object.values(dbsSel)) sel.append(...opts.map(o => o.cloneNode(true)));

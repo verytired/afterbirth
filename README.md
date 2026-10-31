@@ -63,6 +63,8 @@ A second row of controls inspired by the Devil Fish modification of the TB-303 (
 | **SELF OSC** | Lets RESO push the filter into self-oscillation (use TRACK to play it in tune) |
 | **DBS A / B** | Dynamic Bank Switching: while the chosen drum part hits on a step, or while the button is held, that step is read from the pattern with bit A / B of its number flipped (A1 ↔ A2 / A3) |
 
+**DEMO** in the top bar loads a scene that shows the MODS off: **DBS** (writes a contrasting phrase into AB-303 #1 pattern A2 and triggers DBS A from the 808 kick), **SELF OSC** (AB-303 #2 self-oscillating and tracking the notes), **DEVIL FISH** (overdriven, muffled AB-303 #1), and **STOCK** to restore every 303 control. Note that the DBS scene overwrites AB-303 #1 pattern A2.
+
 The stock panel also gets the Devil Fish ranges: **ENV MOD** goes to 3× the stock maximum, and **DECAY** stretches from 15 ms to 3 s with the far right position holding the filter open. Both keep their stock sound at the default position.
 
 The same DSP exists twice, selectable per machine with **ENGINE**:

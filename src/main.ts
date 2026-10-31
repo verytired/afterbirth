@@ -9,6 +9,7 @@ import { cur, ensureAudio, tempo, wireTransport } from './transport';
 import { onMidi, wireMidi } from './midi';
 import { wireRecording } from './record';
 import { wireOutput } from './output';
+import { wireDemo } from './demo';
 
 machines.push(
   make303('AB-303 #1', [[0, 0, 1, 0], [0, 1, 0, 0], [-1], [12, 0, 0, 1], [3, 0, 0, 1], [0, 0, 1, 0], [7, -1, 0, 0], [-1],
@@ -26,6 +27,7 @@ wireTransport();
 wireMidi();
 wireRecording();
 wireOutput();
+wireDemo();
 document.addEventListener('click', save);
 document.addEventListener('change', save);
 
