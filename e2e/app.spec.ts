@@ -233,9 +233,9 @@ test('falls back to the JS engine when the WASM build cannot load', async ({ pag
   errors = errors.filter(e => !e.includes('ERR_FAILED')); // the aborted .wasm request itself
 });
 
-test('ACID TRIP preset: song switches patterns per bar and rides the knobs', async ({ page }) => {
-  page.on('dialog', d => d.accept());
-  await page.click('#preset');
+test('ACID TRIP song file: song switches patterns per bar and rides the knobs', async ({ page }) => {
+  await page.setInputFiles('#songfile', new URL('../public/songs/acid-trip.song.json', import.meta.url).pathname);
+  await expect(page.locator('#songcap')).toHaveText('loaded acid-trip.song.json');
   const state = () => page.evaluate(() => ({
     sel: window.ab.machines.map(m => m.bank.sel),
     cutoff: +document.querySelector<HTMLInputElement>('.dev [name=cutoff]')!.value,
