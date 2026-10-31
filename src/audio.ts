@@ -106,11 +106,11 @@ class Master {
   comp!: ReturnType<typeof stage>;
   init() {
     this.inp = ctx.createGain();
-    this.inp.gain.value = 0.5; // -6dB headroom: the four machines together exceed 1.0
+    this.inp.gain.value = 0.5; // -6dB headroom: the machines together exceed 1.0
     this.comp = stage(this.inp, FX.COMP.make());
     this.lvl = ctx.createGain(); this.an = ctx.createAnalyser(); this.an.fftSize = 1024;
-    // 10ch output: 1/2 MASTER, 3/4 onward one pair per machine (ch 3+ only audible with MULTI OUT)
-    this.merger = ctx.createChannelMerger(10);
+    // 12ch output: 1/2 MASTER, 3/4 onward one pair per machine (ch 3+ only audible with MULTI OUT)
+    this.merger = ctx.createChannelMerger(12);
     ctx.destination.channelInterpretation = 'discrete';
     this.merger.connect(ctx.destination);
     tapTo(this.comp.out.connect(this.lvl), 0);

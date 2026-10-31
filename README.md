@@ -1,6 +1,6 @@
 # AfterBirth AB-3389
 
-An acid groovebox that runs in the browser: two TB-303-style bass lines, 808- and 909-style drum machines, a mixer and effects, all built on the Web Audio API alone. TypeScript + Vite, no runtime dependencies.
+An acid groovebox that runs in the browser: two TB-303-style bass lines, 808-, 909- and 606-style drum machines, a mixer and effects, all built on the Web Audio API alone. TypeScript + Vite, no runtime dependencies.
 
 **▶ Play in your browser: https://verytired.github.io/afterbirth/**
 
@@ -26,8 +26,9 @@ Press ▶ to start (browsers keep audio suspended until the first click). Chrome
 | **AB-303 #1 / #2** | ENGINE (WASM / JS / CLASSIC), FILTER (DIODE / LADDER), MODS (see below), SAW / SQUARE, TUNE / CUTOFF / RESO / ENV MOD / DECAY / ACCENT. 16 steps with note, UP / DN, ACC (accent) and SLD (slide) |
 | **AB-808** | BD / SD / CH / OH / CP. Fully synthesized; CH chokes OH |
 | **AB-909** | BD / SD / LT / MT / HT / RS / CP / CH / OH / CR / RD, with the original's knobs (BD TUNE / ATTACK / DECAY, SD TUNE / TONE / SNAPPY, tom TUNE / DECAY, hat TUNE / DECAY, cymbal TUNE; hat TUNE is an extension, as on the TR-8S). AC row = accent steps (its knob sets the amount), FL row = flam steps (its knob sets the flam time). STEPS sets the pattern length (1–16); shorter patterns loop on their own against the other machines |
+| **AB-606** | AC (accent for the whole step) / BD / SD / LT / HT / CY / CH / OH. Modeled on the TR-606 circuit (bridged-T drums, six-square metal for hats and cymbal, CH cuts OH, OH decay follows the tempo); runs on a WASM engine (`assembly/tr606.ts`, JS twin `src/dsp/tr606.ts` as fallback, kept in sync by a unit test) |
 | **PATTERN** | 32 patterns per machine (1-8 × A-D). Switching while playing waits for the next bar. SHUFFLE on/off per pattern |
-| **SONG** | Pattern chain as text, one row per line: one slot per machine (303#1 303#2 808 909, `-` keeps) and `xN` bars; a line `END` stops the song (and any running recording) instead of looping. ● AUTO records knob moves while the song plays (latched per knob). |
+| **SONG** | Pattern chain as text, one row per line: one slot per machine (303#1 303#2 808 909 606, `-` keeps; a missing slot keeps too) and `xN` bars; a line `END` stops the song (and any running recording) instead of looping. ● AUTO records knob moves while the song plays (latched per knob). |
 | **MIX** | Mute, PAN, DELAY send, fader, DIST / PCF / COMP inserts |
 | **MASTER** | Meter, master fader, master COMP |
 | **PCF** | Pattern-controlled filter. 32 patterns, LP / BP, FREQ / Q / AMT / DEC |
@@ -91,6 +92,8 @@ The same DSP exists twice, selectable per machine with **ENGINE**:
 
 WASM and JS are kept in sync by a unit test that renders both from the same note/knob events and requires them to match, for both filters. The startup ENGINE and FILTER are set in `src/config.ts`.
 
+The **AB-909** works the same way, with ENGINE WASM (`assembly/tr909.ts`) or JS (`src/dsp/tr909.ts`): each hit becomes a few components (oscillator, filtered noise, or 6-bit 18 kHz cymbal ROM played back with a zero-order hold), rendered in an AudioWorklet. The cymbal ROMs are synthesized stand-ins, not samples from the original.
+
 ## Using it with Ableton Live
 
 ### MIDI clock sync (Live → AB)
@@ -115,6 +118,7 @@ If timing drifts, adjust Live's **MIDI Clock Sync Delay**.
 | 5/6 | AB-303 #2 |
 | 7/8 | AB-808 |
 | 9/10 | AB-909 |
+| 11/12 | AB-606 |
 
 4. In Live, set the input device to BlackHole 16ch, route each track's input to Ext. In 3/4 and so on, and record
 
@@ -135,12 +139,12 @@ From **REC** in the top bar.
 |---|---|
 | `npm run dev` | Dev server with hot reload |
 | `npm run typecheck` | TypeScript type check |
-| `npm test` | Unit tests (Vitest): helpers in `src/lib.ts`, and the 303 engine (determinism, stability at max settings, WASM output matching JS) |
+| `npm test` | Unit tests (Vitest): helpers in `src/lib.ts`, the 303 engine (determinism, stability at max settings, WASM output matching JS) and the 909 engine (WASM matching JS, hat choke, levels) and the 606 engine (WASM matching JS, levels, choke) |
 | `npm run e2e` | Builds, then drives the production build in Chrome with Playwright: playback level, pattern banks, MIDI clock, WAV and stem export (stems must sum back to MASTER), engine switching, fallback to JS when the WASM file is blocked |
 | `npm run check` | All of the above |
 | `node scripts/record-demo.mjs <song> <out.mp4> <url>` | Records a bundled song with the app's VIDEO recorder (1080p, MASTER audio) against a built app (`npm run build && npx vite preview`) |
 
-Code lives in `src/`: `tb303.ts` and `drums.ts` (machines), `dsp/` (303 voice engine and its AudioWorklet), `audio.ts` (effects, master, mixer), `transport.ts`, `midi.ts`, `record.ts`, `output.ts`, wired together in `main.ts`. The AssemblyScript port of the engine is in `assembly/`; `npm run dev`, `build` and `test` compile it to `src/dsp/voice.wasm` first.
+Code lives in `src/`: `tb303.ts` and `drums.ts` (machines), `dsp/` (303 voice and 909 drum engines and their AudioWorklets), `audio.ts` (effects, master, mixer), `transport.ts`, `midi.ts`, `record.ts`, `output.ts`, wired together in `main.ts`. The AssemblyScript ports of the engines are in `assembly/`; `npm run dev`, `build` and `test` compile them to `src/dsp/voice.wasm` and `src/dsp/tr909.wasm` first.
 
 ### CI and releases
 
