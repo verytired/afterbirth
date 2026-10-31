@@ -62,6 +62,14 @@ open index.html   # またはブラウザにドラッグ
 
 各マシンの個別出力はフェーダーとインサート（DIST / PCF / COMP）の後。DELAY とマスター COMP は 1/2 にだけ乗ります。出力先の切り替えは Chrome / Edge のみ対応。
 
+## 録音・録画
+
+トップバーの **REC** から。
+
+- **● WAV**：MASTER（フェーダー後）を 16bit ステレオ WAV で録音。もう一度押すと停止して `afterbirth-YYYYMMDD-HHMMSS.wav` をダウンロード。そのまま DAW に読み込めます
+- **● VIDEO**：画面共有で AB のタブを選ぶと、画面と MASTER の音をまとめて録画。もう一度押すか共有を止めると終了。Chrome では mp4、それ以外は webm
+- 録音中はメモリに溜めるので長時間は不向き（10 分でおよそ 200MB）
+
 ## ライセンス
 
 [MIT](LICENSE)

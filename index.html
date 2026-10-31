@@ -20,6 +20,8 @@ h2{margin:0 0 10px;font-size:18px;font-style:italic;font-weight:900;letter-spaci
 .logo small{display:block;font-size:26px;color:#3b4652;text-shadow:0 1px 0 #b8c0c8}
 .tp{width:54px;height:38px;border:2px solid #111;border-radius:3px;background:linear-gradient(#555,#222);color:#ddd;font-size:18px;cursor:pointer}
 .tp.play{background:linear-gradient(#c7f05a,#7cb518);color:#143}
+#rectime{font-size:16px;min-width:56px;height:24px;line-height:24px}
+.tog.recording{background:linear-gradient(#f66,#c11);color:#fff;box-shadow:0 0 8px #f33}
 .tp.play.on{box-shadow:0 0 10px #c7f05a}
 
 /* LED 数値表示 */
@@ -129,6 +131,8 @@ h2{margin:0 0 10px;font-size:18px;font-style:italic;font-weight:900;letter-spaci
     <label>OUTPUT <span class="row" style="gap:6px;align-items:center"><select id="outdev" aria-label="output device"><option value="">既定の出力</option></select>
       <button class="tog" id="multi" title="1/2 MASTER, 3/4 303#1, 5/6 303#2, 7/8 808, 9/10 909">MULTI OUT</button></span></label>
     <label>MIDI CLOCK <span class="row" style="gap:6px;align-items:center"><button class="tog" id="ext">EXT SYNC</button><span class="led-btn" id="beat" style="width:14px"></span></span></label>
+    <label>REC <span class="row" style="gap:6px;align-items:center"><button class="tog" id="rec" title="MASTER を WAV で録音">● WAV</button>
+      <button class="tog" id="vid" title="画面と MASTER の音を録画">● VIDEO</button><span class="led" id="rectime">0:00</span></span></label>
     <div class="logo">AfterBirth<small>AB-3389</small></div>
   </div>
   <div class="devs" id="devs"></div>
@@ -327,6 +331,7 @@ function tapTo(node, ch) {
 const master = {
   init() {
     this.inp = ctx.createGain();
+    this.inp.gain.value = 0.5; // 4 台の合計で 1 を超えるので -6dB のヘッドルーム
     this.comp = stage(this.inp, FX.COMP.make());
     this.lvl = ctx.createGain(); this.an = ctx.createAnalyser(); this.an.fftSize = 1024;
     // 出力は 10ch：1/2 MASTER、3/4 以降に各マシン（MULTI OUT 時だけ 3ch 目以降が出る）
@@ -736,6 +741,100 @@ $('play').onclick = async () => {
   timer = setInterval(tick, 25);
 };
 $('stop').onclick = () => { if (!ext) stop(); };
+
+// ---------- 録音（WAV）と録画 ----------
+// MASTER のフェーダー後を録る。WAV は AudioWorklet で生の PCM を集めて 16bit で書き出す
+// ponytail: 録音中はメモリに溜めるだけ（10 分で 200MB 強）。長時間録るなら逐次書き出しに
+const REC_WORKLET = `registerProcessor('rec', class extends AudioWorkletProcessor {
+  process([inp]) { if (inp.length) this.port.postMessage(inp.map(c => c.slice())); return true; }
+});`;
+let recNode, vidRec, recT0 = 0, recReady = false;
+
+function download(blob, ext) {
+  const d = new Date(), p = n => String(n).padStart(2, '0');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `afterbirth-${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}.${ext}`;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+
+function wav(L, R, sr) {
+  const n = L.reduce((a, c) => a + c.length, 0), v = new DataView(new ArrayBuffer(44 + n * 4));
+  const str = (o, t) => [...t].forEach((c, i) => v.setUint8(o + i, c.charCodeAt(0)));
+  str(0, 'RIFF'); v.setUint32(4, 36 + n * 4, true); str(8, 'WAVEfmt ');
+  v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 2, true);
+  v.setUint32(24, sr, true); v.setUint32(28, sr * 4, true); v.setUint16(32, 4, true); v.setUint16(34, 16, true);
+  str(36, 'data'); v.setUint32(40, n * 4, true);
+  let o = 44;
+  for (let k = 0; k < L.length; k++)
+    for (let i = 0; i < L[k].length; i++)
+      for (const ch of [L, R]) {
+        const x = Math.max(-1, Math.min(1, ch[k][i]));
+        v.setInt16(o, x < 0 ? x * 0x8000 : x * 0x7fff, true);
+        o += 2;
+      }
+  return new Blob([v], {type: 'audio/wav'});
+}
+
+const recTimer = () => {
+  const on = recNode || vidRec;
+  if (on && !recT0) recT0 = Date.now();
+  if (!on) recT0 = 0;
+  const sec = recT0 ? (Date.now() - recT0) / 1000 | 0 : 0;
+  $('rectime').textContent = `${sec / 60 | 0}:${String(sec % 60).padStart(2, '0')}`;
+};
+setInterval(recTimer, 250);
+
+$('rec').onclick = async () => {
+  await ensureAudio();
+  if (recNode) {
+    master.lvl.disconnect(recNode);
+    recNode.port.onmessage = null;
+    download(wav(recNode.L, recNode.R, ctx.sampleRate), 'wav');
+    recNode = null;
+  } else {
+    if (!recReady) {
+      await ctx.audioWorklet.addModule('data:text/javascript,' + encodeURIComponent(REC_WORKLET)) // file:// でも読めるよう data URL;
+      recReady = true;
+    }
+    recNode = new AudioWorkletNode(ctx, 'rec', {numberOfInputs: 1, numberOfOutputs: 0, channelCount: 2, channelCountMode: 'explicit'});
+    recNode.L = []; recNode.R = [];
+    recNode.port.onmessage = e => { recNode.L.push(e.data[0]); recNode.R.push(e.data[1]); };
+    master.lvl.connect(recNode);
+  }
+  $('rec').classList.toggle('recording', !!recNode);
+  recTimer();
+};
+
+// 録画はタブの画面共有 + MASTER の音。共有を止めても録画が終わる
+$('vid').onclick = async () => {
+  await ensureAudio();
+  if (vidRec) { vidRec.stop(); return; }
+  let scr;
+  try {
+    scr = await navigator.mediaDevices.getDisplayMedia({video: {frameRate: 30}, audio: false, preferCurrentTab: true});
+  } catch { return; } // キャンセル
+  const dest = ctx.createMediaStreamDestination();
+  master.lvl.connect(dest);
+  const type = ['video/mp4;codecs=avc1,mp4a.40.2', 'video/webm;codecs=vp9,opus', 'video/webm'].find(t => MediaRecorder.isTypeSupported(t));
+  const mr = new MediaRecorder(new MediaStream([...scr.getVideoTracks(), ...dest.stream.getAudioTracks()]), {mimeType: type, videoBitsPerSecond: 8e6});
+  const chunks = [];
+  mr.ondataavailable = e => chunks.push(e.data);
+  mr.onstop = () => {
+    scr.getTracks().forEach(t => t.stop());
+    master.lvl.disconnect(dest);
+    download(new Blob(chunks, {type}), type.startsWith('video/mp4') ? 'mp4' : 'webm');
+    vidRec = null;
+    $('vid').classList.remove('recording');
+    recTimer();
+  };
+  scr.getVideoTracks()[0].onended = () => mr.state !== 'inactive' && mr.stop();
+  mr.start(1000);
+  vidRec = mr;
+  $('vid').classList.add('recording');
+  recTimer();
+};
 
 // ---------- 出力先と MULTI OUT（BlackHole 16ch などに出して DAW で録る） ----------
 let multi = false;
